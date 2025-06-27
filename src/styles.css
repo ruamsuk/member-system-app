@@ -55,3 +55,20 @@ input:-webkit-autofill:active {
   /* ใช้ค่าสี Hex Code โดยตรง (สีขาว) */
   -webkit-text-fill-color: #ffffff !important;
 }
+
+/* สร้าง custom style สำหรับ form elements เพื่อใช้ซ้ำ */
+.form-label {
+  @apply block text-gray-600 font-medium mb-2 dark:text-gray-300;
+}
+
+.form-input {
+  @apply w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white;
+}
+
+.btn-primary {
+  @apply bg-blue-600 text-white font-bold py-2 px-6 rounded-lg hover:bg-blue-700 transition duration-300 disabled:opacity-50;
+}
+
+.btn-secondary {
+  @apply bg-gray-200 text-gray-700 font-bold py-2 px-6 rounded-lg hover:bg-gray-300 transition duration-300 dark:bg-gray-600 dark:text-gray-200 dark:hover:bg-gray-500;
+}
