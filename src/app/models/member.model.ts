@@ -13,4 +13,5 @@ export interface Member {
   updated?: Date;
   zip?: string;
   alive?: string;
+  photoURL?: string;
 }

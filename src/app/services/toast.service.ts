@@ -3,6 +3,7 @@ import { BehaviorSubject } from 'rxjs';
 
 export interface ToastMessage {
   id: number;
+  summary?: string;
   text: string;
   type: 'success' | 'error' | 'info' | 'warning';
 }
@@ -17,11 +18,16 @@ export class ToastService {
     return this.messages.asObservable();
   }
 
-  show(text: string, type: ToastMessage['type'] = 'info') {
+  show(summary: string, text: string, type: ToastMessage['type'] = 'info') {
     const id = Date.now();
-    const newMessage: ToastMessage = {id, text, type};
-    const current = this.messages.getValue();
-    this.messages.next([...current, newMessage]);
+    const newMessage: ToastMessage = {id, summary, text, type};
+
+    // ห่อการอัปเดตค่าไว้ใน setTimeout เพื่อให้ทำงานในรอบถัดไป
+    setTimeout(() => {
+      const current = this.messages.getValue();
+      this.messages.next([...current, newMessage]);
+    }, 0);
+
 
     // ลบหลังจากผ่านไป 4 วินาที
     setTimeout(() => {

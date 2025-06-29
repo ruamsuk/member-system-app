@@ -29,13 +29,13 @@ export class CountAgeService {
       return 'รูปแบบวันเกิดไม่ถูกต้อง';
     }
 
-    // Calculate the difference in years
+    // Calculate the difference in the past years
     const years = today.diff(birthDate, 'year');
 
     // Calculate the difference in the past months after adding the years to the birthdate
     const months = today.diff(birthDate.add(years, 'year'), 'month');
 
-    // Calculate the difference in days after adding years and months to the birthdate
+    // Calculate the difference in the past days after adding years and months to the birthdate
     const days = today.diff(birthDate.add(years, 'year').add(months, 'month'), 'day');
 
     return `${years} ปี ${months} เดือน ${days} วัน`;

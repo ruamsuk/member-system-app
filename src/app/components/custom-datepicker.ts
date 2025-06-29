@@ -13,7 +13,7 @@ import { NG_VALUE_ACCESSOR } from '@angular/forms';
     }
   ],
   template: `
-    <div class="flex gap-2">
+    <div class="flex gap-2 text-gray-900 dark:text-gray-600">
       <!-- Dropdown สำหรับ "วัน" -->
       <select [disabled]="disabled()" (change)="onDayChange($event)" [value]="selectedDay() || ''" class="form-select">
         <option value="" disabled>-- วัน --</option>
@@ -43,7 +43,7 @@ import { NG_VALUE_ACCESSOR } from '@angular/forms';
   `,
   styles: `
     .form-select {
-      @apply block w-full px-3 py-2 text-base font-normal text-gray-700 bg-white bg-clip-padding border border-solid border-gray-300 rounded-md transition ease-in-out m-0 focus:text-gray-700 focus:bg-white focus:border-blue-600 focus:outline-none disabled:bg-gray-100 dark:bg-gray-700 dark:text-gray-200 dark:border-gray-600;
+      @apply block w-full  py-2 text-base font-normal text-gray-700 bg-white bg-clip-padding border border-solid border-gray-300 rounded-md transition ease-in-out m-0 focus:text-gray-700 focus:bg-white focus:border-blue-600 focus:outline-none disabled:bg-gray-100 dark:bg-gray-700 dark:text-gray-200 dark:border-gray-600;
     }`
 })
 export class CustomDatepicker {
@@ -82,11 +82,22 @@ export class CustomDatepicker {
     this.updateDaysInMonth();
   }
 
-  writeValue(value: Date | null): void {
-    if (value && !isNaN(value.getTime())) {
-      this.selectedDay.set(value.getDate());
-      this.selectedMonth.set(value.getMonth());
-      this.selectedYear.set(value.getFullYear() + 543);
+  writeValue(value: any | null): void {
+    let dateValue: Date | null = null;
+
+    // ตรวจสอบว่าค่าที่รับมาเป็น Timestamp ของ Firestore หรือไม่
+    if (value && typeof value.toDate === 'function') {
+      dateValue = value.toDate();
+    }
+    // ตรวจสอบว่าเป็น Date object อยู่แล้วหรือไม่
+    else if (value instanceof Date) {
+      dateValue = value;
+    }
+
+    if (dateValue && !isNaN(dateValue.getTime())) {
+      this.selectedDay.set(dateValue.getDate());
+      this.selectedMonth.set(dateValue.getMonth());
+      this.selectedYear.set(dateValue.getFullYear() + 543);
       this.updateDaysInMonth();
     } else {
       this.selectedDay.set(null);

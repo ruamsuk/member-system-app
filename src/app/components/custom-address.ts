@@ -15,7 +15,7 @@ import { AddressService } from '../services/address.service';
     }
   ],
   template: `
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-2">
+    <div class="text-gray-900 dark:text-gray-600 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-2">
       <!-- Province Selector -->
       <select [disabled]="disabled()" (change)="onProvinceChange($event)" [value]="selectedProvinceId() || ''"
               class="form-select">
