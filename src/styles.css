@@ -6,6 +6,7 @@
 @import "tailwindcss";
 
 @custom-variant dark (&:where(.dark, .dark *));
+@reference "tailwindcss";
 
 @font-face {
   font-family: 'Leelawadee UI';
@@ -36,14 +37,6 @@ button {
   }
 }
 
-.btn-disabled {
-  @apply py-2 px-3 bg-indigo-400 text-slate-300 rounded-lg opacity-45 cursor-not-allowed;
-}
-
-.loading-shade {
-  @apply fixed inset-0 bg-black/50 z-[9999999] flex items-center justify-center;
-}
-
 /* === Autofill Style Override for Dark Mode === */
 input:-webkit-autofill,
 input:-webkit-autofill:hover,
@@ -54,6 +47,14 @@ input:-webkit-autofill:active {
 
   /* ใช้ค่าสี Hex Code โดยตรง (สีขาว) */
   -webkit-text-fill-color: #ffffff !important;
+}
+
+.btn-disabled {
+  @apply py-2 px-3 bg-indigo-400 text-slate-300 rounded-lg opacity-45 cursor-not-allowed;
+}
+
+.loading-shade {
+  @apply fixed inset-0 bg-black/50 z-[9999999] flex items-center justify-center;
 }
 
 /* สร้าง custom style สำหรับ form elements เพื่อใช้ซ้ำ */

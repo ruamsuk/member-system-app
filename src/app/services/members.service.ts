@@ -13,6 +13,7 @@ import {
   updateDoc,
   where
 } from '@angular/fire/firestore';
+import { getDownloadURL, ref, Storage, uploadBytes } from '@angular/fire/storage';
 import { Observable } from 'rxjs';
 import { Member } from '../models/member.model';
 
@@ -21,6 +22,7 @@ import { Member } from '../models/member.model';
 })
 export class MembersService {
   private readonly firestore: Firestore = inject(Firestore);
+  private readonly storage: Storage = inject(Storage);
 
   constructor() {
   }
@@ -36,6 +38,25 @@ export class MembersService {
     const userQuery = query(memberCollection, orderBy('firstname', 'asc'));
 
     return collectionData(userQuery, {idField: 'id'}) as Observable<Member[]>;
+  }
+
+  /**
+   *  Uploads a member's image to Firebase Storage.
+   *  @param {File} file - The image file to be uploaded.
+   *  @param {string} memberId - The ID of the member to whom the image belongs.
+   *
+   *  @returns {Promise<string>} A promise that resolves to the download URL of the uploaded image.
+   * */
+  async uploadMemberImage(file: File, memberId: string): Promise<string> {
+    // สร้าง Path ที่จะเก็บไฟล์ เช่น /member_images/MEMBER_ID/avatar.jpg
+    const filePath = `member_images/${memberId}/${file.name}`;
+    const storageRef = ref(this.storage, filePath);
+
+    // ทำการอัปโหลดไฟล์
+    await uploadBytes(storageRef, file);
+
+    // ดึง URL ของไฟล์ที่เพิ่งอัปโหลดไป
+    return await getDownloadURL(storageRef);
   }
 
   // vvv แก้ไขให้คืนค่าเป็น Promise<void> vvv
@@ -68,32 +89,4 @@ export class MembersService {
     return querySnapshot.size > 0;
   }
 
-  /*deleteMember(id: string | undefined) {
-    const docInstance = doc(this.firestore, 'members', `${id}`);
-    return from(deleteDoc(docInstance));
-  }
-
-  updateMember(member: any): Observable<any> {
-    const docInstance = doc(this.firestore, `members/${member.id}`);
-
-    return from(updateDoc(docInstance, {...member, updated: new Date()}));
-  }
-
-  checkDuplicate(firstname: string, lastname: string): Observable<boolean> {
-    const dbInstance = collection(this.firestore, 'members');
-    const q = query(
-      dbInstance,
-      where('firstname', '==', firstname),
-      where('lastname', '==', lastname),
-    );
-    return from(getDocs(q)).pipe(
-      map((querySnapshot) => querySnapshot.size > 0),
-      catchError(() => of(false)),
-    );
-  }
-
-  addMember(member: Member): Observable<any> {
-    const docRef = collection(this.firestore, 'members');
-    return from(addDoc(docRef, {...member, created: new Date()}));
-  }*/
 }

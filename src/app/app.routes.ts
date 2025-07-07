@@ -23,7 +23,7 @@ export const routes: Routes = [
   {
     path: 'members',
     loadComponent: () => import('./components/member-list')
-      .then(m => m.MemberList),
+      .then(m => m.MemberListComponent),
     canActivate: [authGuard] // ใช้ Guard ป้องกันหน้านี้
   },
   {

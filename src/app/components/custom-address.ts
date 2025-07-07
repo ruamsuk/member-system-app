@@ -1,7 +1,8 @@
 import { CommonModule } from '@angular/common';
-import { Component, computed, forwardRef, inject, OnInit, signal } from '@angular/core';
+import { AfterViewInit, Component, computed, effect, inject, signal } from '@angular/core';
+import { toSignal } from '@angular/core/rxjs-interop';
 import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
-import { AddressValue, District, Province, Subdistrict } from '../models/province.model';
+import { AddressValue } from '../models/province.model';
 import { AddressService } from '../services/address.service';
 
 @Component({
@@ -10,39 +11,40 @@ import { AddressService } from '../services/address.service';
   providers: [
     {
       provide: NG_VALUE_ACCESSOR,
-      useExisting: forwardRef(() => CustomAddress),
+      useExisting: CustomAddress,
       multi: true
     }
   ],
   template: `
     <div class="text-gray-900 dark:text-gray-600 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-2">
       <!-- Province Selector -->
-      <select [disabled]="disabled()" (change)="onProvinceChange($event)" [value]="selectedProvinceId() || ''"
-              class="form-select">
-        <option value="" disabled>-- จังหวัด --</option>
+      <select [disabled]="disabled()" (change)="onProvinceChange($event)" class="form-select">
+        <option value="" disabled selected>-- จังหวัด --</option>
         @for (province of allProvinces(); track province.id) {
-          <option [value]="province.id">{{ province.name_th }}</option>
+          <option [attr.value]="province.id" [selected]="province.id === selectedProvinceId()">
+            {{ province.name_th }}
+          </option>
         }
       </select>
-
       <!-- District Selector -->
-      <select [disabled]="disabled() || !selectedProvinceId()" (change)="onDistrictChange($event)"
-              [value]="selectedDistrictId() || ''" class="form-select">
-        <option value="" disabled>-- อำเภอ/เขต --</option>
+      <select [disabled]="disabled() || !selectedProvinceId()" (change)="onDistrictChange($event)" class="form-select">
+        <option value="" disabled selected>-- อำเภอ/เขต --</option>
         @for (district of availableDistricts(); track district.id) {
-          <option [value]="district.id">{{ district.name_th }}</option>
+          <option [attr.value]="district.id" [selected]="district.id === selectedDistrictId()">
+            {{ district.name_th }}
+          </option>
         }
       </select>
-
       <!-- Subdistrict Selector -->
       <select [disabled]="disabled() || !selectedDistrictId()" (change)="onSubdistrictChange($event)"
-              [value]="selectedSubdistrictId() || ''" class="form-select">
-        <option value="" disabled>-- ตำบล/แขวง --</option>
+              class="form-select">
+        <option value="" disabled selected>-- ตำบล/แขวง --</option>
         @for (subdistrict of availableSubdistricts(); track subdistrict.id) {
-          <option [value]="subdistrict.id">{{ subdistrict.name_th }}</option>
+          <option [attr.value]="subdistrict.id" [selected]="subdistrict.id === selectedSubdistrictId()">
+            {{ subdistrict.name_th }}
+          </option>
         }
       </select>
-
       <!-- Zip Code Display -->
       <input
         type="text"
@@ -52,70 +54,117 @@ import { AddressService } from '../services/address.service';
     </div>
   `,
   styles: `
+    @reference tailwindcss;
     .form-select {
       @apply block w-full px-3 py-2 text-base font-normal text-gray-700 bg-white bg-clip-padding border border-solid border-gray-300 rounded-md transition ease-in-out m-0 focus:text-gray-700 focus:bg-white focus:border-blue-600 focus:outline-none disabled:bg-gray-100 dark:bg-gray-700 dark:text-gray-200 dark:border-gray-600;
     }`
 })
-export class CustomAddress implements ControlValueAccessor, OnInit {
+export class CustomAddress implements ControlValueAccessor, AfterViewInit {
   private addressService = inject(AddressService);
 
-  // --- Signals สำหรับเก็บข้อมูลทั้งหมดจาก JSON ---
-  allProvinces = signal<Province[]>([]);
-  private allDistricts = signal<District[]>([]);
-  private allSubdistricts = signal<Subdistrict[]>([]);
+// --- Signals สำหรับเก็บข้อมูลทั้งหมดจาก JSON ---
+  allProvinces = toSignal(this.addressService.getProvinces(), {initialValue: []});
+  allDistricts = toSignal(this.addressService.getDistricts(), {initialValue: []});
+  allSubdistricts = toSignal(this.addressService.getSubdistricts(), {initialValue: []});
+
 
   // --- Signals สำหรับเก็บค่าที่ผู้ใช้เลือก ---
   selectedProvinceId = signal<number | null>(null);
   selectedDistrictId = signal<number | null>(null);
   selectedSubdistrictId = signal<number | null>(null);
 
+  disabled = signal(false);
+  private valueFromParent = signal<AddressValue | null>(null);
+  private viewReady = signal(false);
+
   // --- Computed Signals (ทำงานอัตโนมัติ) ---
   availableDistricts = computed(() => {
-    const provinceId = this.selectedProvinceId();
-    if (!provinceId) return [];
-    return this.allDistricts().filter(d => d.province_id === provinceId).sort((a, b) => a.name_th.localeCompare(b.name_th));
+    const pid = this.selectedProvinceId();
+    return pid ? this.allDistricts().filter(d => d.province_id === pid) : [];
   });
 
   availableSubdistricts = computed(() => {
-    const districtId = this.selectedDistrictId();
-    if (!districtId) return [];
-    return this.allSubdistricts().filter(s => s.amphure_id === districtId).sort((a, b) => a.name_th.localeCompare(b.name_th));
+    const did = this.selectedDistrictId();
+    return did ? this.allSubdistricts().filter(s => s.amphure_id === did) : [];
   });
 
   zipCode = computed(() => {
-    const subdistrictId = this.selectedSubdistrictId();
-    if (!subdistrictId) return '';
-    const subdistrict = this.allSubdistricts().find(s => s.id === subdistrictId);
-    return subdistrict?.zip_code.toString() || '';
+    const sid = this.selectedSubdistrictId();
+    return sid
+      ? this.allSubdistricts().find(s => s.id === sid)?.zip_code.toString() ?? ''
+      : '';
   });
 
-  ngOnInit(): void {
-    // โหลดข้อมูลทั้งหมดมาเก็บไว้ใน Signal ตอนเริ่มต้น
-    this.addressService.getProvinces().subscribe(data => this.allProvinces.set(data.sort((a, b) => a.name_th.localeCompare(b.name_th))));
-    this.addressService.getDistricts().subscribe(data => this.allDistricts.set(data));
-    this.addressService.getSubdistricts().subscribe(data => this.allSubdistricts.set(data));
-  }
+  constructor() {
+    effect(() => {
+      if (!this.viewReady()) return;
 
-  // --- Implementation ของ ControlValueAccessor ---
-  onChange: (value: AddressValue | null) => void = () => {
-  };
-  onTouched: () => void = () => {
-  };
-  disabled = signal(false);
+      const value = this.valueFromParent();
+      const provinces = this.allProvinces();
+      const districts = this.allDistricts();
+      const subdistricts = this.allSubdistricts();
 
-  writeValue(value: AddressValue | null): void {
-    // ใช้ setTimeout เพื่อให้แน่ใจว่า dropdown มีข้อมูลพร้อมแล้วก่อนที่จะตั้งค่า
-    setTimeout(() => {
       if (value) {
-        this.selectedProvinceId.set(value.provinceId);
-        this.selectedDistrictId.set(value.districtId);
-        this.selectedSubdistrictId.set(value.subdistrictId);
+        const validProvince = provinces.find(p => p.id === value.provinceId);
+        const validDistrict = districts.find(d => d.id === value.districtId && d.province_id === value.provinceId);
+        const validSubdistrict = subdistricts.find(
+          s =>
+            s.id === value.subdistrictId &&
+            s.amphure_id === value.districtId &&
+            validDistrict
+        );
+
+        console.log('validProvince', validProvince);
+        console.log('validDistrict', validDistrict);
+        console.log('validSubdistrict', validSubdistrict);
+
+        this.selectedProvinceId.set(validProvince?.id ?? null);
+        if (validProvince && validDistrict) {
+          queueMicrotask(() => {
+            this.selectedDistrictId.set(validDistrict.id);
+          });
+        } else {
+          this.selectedDistrictId.set(null);
+        }
+        if (validDistrict && validSubdistrict) {
+          queueMicrotask(() => {
+            this.selectedSubdistrictId.set(validSubdistrict.id);
+          });
+        } else {
+          this.selectedSubdistrictId.set(null);
+        }
       } else {
         this.selectedProvinceId.set(null);
         this.selectedDistrictId.set(null);
         this.selectedSubdistrictId.set(null);
       }
-    }, 0);
+    });
+
+    effect(() => {
+      const current = {
+        provinceId: this.selectedProvinceId(),
+        districtId: this.selectedDistrictId(),
+        subdistrictId: this.selectedSubdistrictId(),
+        zipCode: this.zipCode() || null,
+      };
+      this.onChange(current);
+    });
+  }
+
+  ngAfterViewInit(): void {
+    this.viewReady.set(true);
+  }
+
+  // --- Implementation ของ ControlValueAccessor ---
+  onChange: (_: AddressValue | null) => void = () => {
+  };
+  onTouched: () => void = () => {
+  };
+
+  // จุดที่แก้ไข
+  writeValue(value: AddressValue | null): void {
+    this.valueFromParent.set(value);
+
   }
 
   registerOnChange(fn: any): void {
@@ -159,11 +208,10 @@ export class CustomAddress implements ControlValueAccessor, OnInit {
       subdistrictId: this.selectedSubdistrictId(),
       zipCode: this.zipCode()
     };
-    // ส่งค่ากลับไปเมื่อทุก field ที่จำเป็นถูกเลือกแล้ว
     if (value.provinceId && value.districtId && value.subdistrictId) {
       this.onChange(value);
     } else {
-      this.onChange(null); // ส่ง null ถ้ายังเลือกไม่ครบ
+      this.onChange(null);
     }
   }
 }
