@@ -12,6 +12,7 @@ import { LoadingService } from '../services/loading.service';
 import { MembersService } from '../services/members.service';
 import { DialogService } from '../shared/services/dialog';
 import { CustomAddress } from './custom-address';
+import { CustomDatepicker } from './custom-datepicker';
 
 @Component({
   selector: 'app-member-list',
@@ -21,7 +22,8 @@ import { CustomAddress } from './custom-address';
     ReactiveFormsModule,
     FormsModule,
     ThaiDatePipe,
-    CustomAddress
+    CustomAddress,
+    CustomDatepicker
   ],
   template: `
     <main class="container mx-auto p-4 md:p-8">
@@ -86,9 +88,9 @@ import { CustomAddress } from './custom-address';
       <!-- Member List -->
       <div class="mt-6">
         @if (loadingService.isLoading() && members()?.length === 0) {
-          <div class="flex justify-center items-center p-8">
+          <!--<div class="flex justify-center items-center p-8">
             <div class="w-12 h-12 border-4 border-dashed rounded-full animate-spin border-blue-600"></div>
-          </div>
+          </div>-->
         } @else {
           <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             @for (member of paginatedMembers(); track member.id) {
@@ -270,6 +272,10 @@ import { CustomAddress } from './custom-address';
                       </select>
                     </div>
                     <div class="mb-4">
+                      <label class="form-label">วัน/เดือน/ปีเกิด</label>
+                      <app-custom-datepicker formControlName="birthdate"></app-custom-datepicker>
+                    </div>
+                    <div class="mb-4">
                       <label class="form-label">ที่อยู่ (เลขที่, ถนน)</label>
                       <input type="text" formControlName="addressLine1" class="form-input">
                     </div>
@@ -380,6 +386,10 @@ export class MemberListComponent implements OnInit {
       }
       : null;
 
+    if (member?.birthdate && 'seconds' in member.birthdate) {
+      member.birthdate = new Date(member.birthdate.seconds * 1000);
+    }
+
     this.memberForm = this.fb.group({
       rank: [member?.rank || ''],
       firstname: [member?.firstname || '', Validators.required],
@@ -414,7 +424,7 @@ export class MemberListComponent implements OnInit {
   }
 
   switchToEditMode(): void {
-    console.log('switchToEditMode', JSON.stringify(this.selectedMember(), null, 2));
+    // console.log('switchToEditMode', JSON.stringify(this.selectedMember(), null, 2));
     if (this.selectedMember()) {
       this.initializeForm(this.selectedMember());
       this.imagePreviewUrl.set(this.selectedMember()!.photoURL || null);

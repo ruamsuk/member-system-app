@@ -5,8 +5,9 @@
 
 @import "tailwindcss";
 
-@custom-variant dark (&:where(.dark, .dark *));
 @reference "tailwindcss";
+
+@custom-variant dark (&:where(.dark, .dark *));
 
 @font-face {
   font-family: 'Leelawadee UI';

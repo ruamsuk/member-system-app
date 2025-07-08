@@ -114,29 +114,39 @@ export class CustomAddress implements ControlValueAccessor, AfterViewInit {
             validDistrict
         );
 
-        console.log('validProvince', validProvince);
-        console.log('validDistrict', validDistrict);
-        console.log('validSubdistrict', validSubdistrict);
+        // console.log('validProvince', validProvince);
+        // console.log('validDistrict', validDistrict);
+        // console.log('validSubdistrict', validSubdistrict);
 
         this.selectedProvinceId.set(validProvince?.id ?? null);
-        if (validProvince && validDistrict) {
-          queueMicrotask(() => {
-            this.selectedDistrictId.set(validDistrict.id);
-          });
-        } else {
-          this.selectedDistrictId.set(null);
-        }
-        if (validDistrict && validSubdistrict) {
-          queueMicrotask(() => {
-            this.selectedSubdistrictId.set(validSubdistrict.id);
-          });
-        } else {
-          this.selectedSubdistrictId.set(null);
-        }
+        queueMicrotask(() => {
+          this.selectedDistrictId.set(validProvince && validDistrict ? validDistrict.id : null);
+        });
+
+        queueMicrotask(() => {
+          this.selectedSubdistrictId.set(validDistrict && validSubdistrict ? validSubdistrict.id : null);
+        });
+
+        // if (validProvince && validDistrict) {
+        //   queueMicrotask(() => {
+        //     this.selectedDistrictId.set(validDistrict.id);
+        //   });
+        // } else {
+        //   // this.selectedDistrictId.set(null);
+        // }
+        // if (validDistrict && validSubdistrict) {
+        //   queueMicrotask(() => {
+        //     this.selectedSubdistrictId.set(validSubdistrict.id);
+        //   });
+        // } else {
+        //   // this.selectedSubdistrictId.set(null);
+        // }
       } else {
-        this.selectedProvinceId.set(null);
-        this.selectedDistrictId.set(null);
-        this.selectedSubdistrictId.set(null);
+        queueMicrotask(() => {
+          this.selectedProvinceId.set(null);
+          this.selectedDistrictId.set(null);
+          this.selectedSubdistrictId.set(null);
+        });
       }
     });
 

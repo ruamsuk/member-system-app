@@ -1,39 +1,53 @@
 import { CommonModule } from '@angular/common';
-import { Component, forwardRef, signal } from '@angular/core';
-import { NG_VALUE_ACCESSOR } from '@angular/forms';
+import { Component, effect, forwardRef, signal, } from '@angular/core';
+import { ControlValueAccessor, FormsModule, NG_VALUE_ACCESSOR } from '@angular/forms';
 
 @Component({
   selector: 'app-custom-datepicker',
-  imports: [CommonModule],
+  standalone: true,
+  imports: [CommonModule, FormsModule],
   providers: [
     {
       provide: NG_VALUE_ACCESSOR,
       useExisting: forwardRef(() => CustomDatepicker),
-      multi: true
-    }
+      multi: true,
+    },
   ],
   template: `
     <div class="flex gap-2 text-gray-900 dark:text-gray-600">
-      <!-- Dropdown สำหรับ "วัน" -->
-      <select [disabled]="disabled()" (change)="onDayChange($event)" [value]="selectedDay() || ''" class="form-select">
+      <!-- วัน -->
+      <select
+        [disabled]="disabled()"
+        [(ngModel)]="selectedDayValue"
+        (ngModelChange)="onDaySelectChange($event)"
+        class="form-select"
+      >
         <option value="" disabled>-- วัน --</option>
         @for (day of daysInMonth(); track day) {
           <option [value]="day">{{ day }}</option>
         }
       </select>
 
-      <!-- Dropdown สำหรับ "เดือน" -->
-      <select [disabled]="disabled()" (change)="onMonthChange($event)" [value]="selectedMonth() ?? ''"
-              class="form-select">
+      <!-- เดือน -->
+      <select
+        [disabled]="disabled()"
+        [(ngModel)]="selectedMonthValue"
+        (ngModelChange)="onMonthSelectChange($event)"
+        class="form-select"
+      >
         <option value="" disabled>-- เดือน --</option>
         @for (month of months; track month.value) {
           <option [value]="month.value">{{ month.name }}</option>
         }
       </select>
 
-      <!-- Dropdown สำหรับ "ปี พ.ศ." -->
-      <select [disabled]="disabled()" (change)="onYearChange($event)" [value]="selectedYear() || ''"
-              class="form-select">
+      <!-- ปี -->
+      <select
+        [disabled]="disabled()"
+        [(ngModel)]="selectedYearValue"
+        (ngModelChange)="onYearSelectChange($event)"
+        class="form-select"
+      >
         <option value="" disabled>-- ปี พ.ศ. --</option>
         @for (year of yearRange; track year) {
           <option [value]="year">{{ year }}</option>
@@ -42,69 +56,106 @@ import { NG_VALUE_ACCESSOR } from '@angular/forms';
     </div>
   `,
   styles: `
-    @reference tailwindcss;
     .form-select {
-      @apply block w-full  py-2 text-base font-normal text-gray-700 bg-white bg-clip-padding border border-solid border-gray-300 rounded-md transition ease-in-out m-0 focus:text-gray-700 focus:bg-white focus:border-blue-600 focus:outline-none disabled:bg-gray-100 dark:bg-gray-700 dark:text-gray-200 dark:border-gray-600;
-    }`
+      @apply block w-full py-2 text-base font-normal text-gray-700 bg-white bg-clip-padding border border-solid border-gray-300 rounded-md transition ease-in-out m-0 focus:text-gray-700 focus:bg-white focus:border-blue-600 focus:outline-none disabled:bg-gray-100 dark:bg-gray-700 dark:text-gray-200 dark:border-gray-600;
+    }
+  `,
 })
-export class CustomDatepicker {
-// Signals สำหรับเก็บค่าที่ผู้ใช้เลือก
+export class CustomDatepicker implements ControlValueAccessor {
+  // Signals สำหรับ logic
   selectedDay = signal<number | null>(null);
   selectedMonth = signal<number | null>(null);
   selectedYear = signal<number | null>(null);
 
-  // Signals และข้อมูลสำหรับสร้าง Dropdowns
+  // ngModel values สำหรับ select
+  selectedDayValue = '';
+  selectedMonthValue = '';
+  selectedYearValue = '';
+
   daysInMonth = signal<number[]>([]);
   readonly months = [
-    {value: 0, name: 'มกราคม'}, {value: 1, name: 'กุมภาพันธ์'},
-    {value: 2, name: 'มีนาคม'}, {value: 3, name: 'เมษายน'},
-    {value: 4, name: 'พฤษภาคม'}, {value: 5, name: 'มิถุนายน'},
-    {value: 6, name: 'กรกฎาคม'}, {value: 7, name: 'สิงหาคม'},
-    {value: 8, name: 'กันยายน'}, {value: 9, name: 'ตุลาคม'},
-    {value: 10, name: 'พฤศจิกายน'}, {value: 11, name: 'ธันวาคม'}
+    {value: 0, name: 'มกราคม'},
+    {value: 1, name: 'กุมภาพันธ์'},
+    {value: 2, name: 'มีนาคม'},
+    {value: 3, name: 'เมษายน'},
+    {value: 4, name: 'พฤษภาคม'},
+    {value: 5, name: 'มิถุนายน'},
+    {value: 6, name: 'กรกฎาคม'},
+    {value: 7, name: 'สิงหาคม'},
+    {value: 8, name: 'กันยายน'},
+    {value: 9, name: 'ตุลาคม'},
+    {value: 10, name: 'พฤศจิกายน'},
+    {value: 11, name: 'ธันวาคม'},
   ];
   readonly yearRange: number[] = [];
 
-  // --- Implementation ของ ControlValueAccessor ---
   onChange: (value: Date | null) => void = () => {
   };
   onTouched: () => void = () => {
   };
   disabled = signal(false);
+  private isSettingFromWriteValue = false;
 
   constructor() {
-    // สร้างช่วงของปี พ.ศ. จากปีปัจจุบันย้อนหลังไป 100 ปี
     const currentYearCE = new Date().getFullYear();
     const currentYearBE = currentYearCE + 543;
-    const startYearBE = currentYearBE - 100;
-    for (let year = currentYearBE; year >= startYearBE; year--) {
+    for (let year = currentYearBE; year >= currentYearBE - 100; year--) {
       this.yearRange.push(year);
     }
+
     this.updateDaysInMonth();
+
+    // Effect: auto update days when month/year change
+    effect(() => {
+      this.updateDaysInMonth();
+    });
   }
 
   writeValue(value: any | null): void {
+    console.log('✅ writeValue called with:', value);
     let dateValue: Date | null = null;
 
-    // ตรวจสอบว่าค่าที่รับมาเป็น Timestamp ของ Firestore หรือไม่
     if (value && typeof value.toDate === 'function') {
       dateValue = value.toDate();
-    }
-    // ตรวจสอบว่าเป็น Date object อยู่แล้วหรือไม่
-    else if (value instanceof Date) {
+    } else if (
+      value &&
+      typeof value.seconds === 'number' &&
+      typeof value.nanoseconds === 'number'
+    ) {
+      dateValue = new Date(value.seconds * 1000);
+    } else if (value instanceof Date) {
       dateValue = value;
     }
 
+    this.isSettingFromWriteValue = true;
+
     if (dateValue && !isNaN(dateValue.getTime())) {
-      this.selectedDay.set(dateValue.getDate());
       this.selectedMonth.set(dateValue.getMonth());
       this.selectedYear.set(dateValue.getFullYear() + 543);
       this.updateDaysInMonth();
+
+      this.selectedDay.set(dateValue.getDate());
+
+      // sync ngModel
+      this.selectedMonthValue = String(dateValue.getMonth());
+      this.selectedYearValue = String(dateValue.getFullYear() + 543);
+      this.selectedDayValue = String(dateValue.getDate());
     } else {
       this.selectedDay.set(null);
       this.selectedMonth.set(null);
       this.selectedYear.set(null);
+      this.selectedDayValue = '';
+      this.selectedMonthValue = '';
+      this.selectedYearValue = '';
     }
+
+    console.log('✅ writeValue FINAL:', {
+      day: this.selectedDay(),
+      month: this.selectedMonth(),
+      year: this.selectedYear(),
+    });
+
+    this.isSettingFromWriteValue = false;
   }
 
   registerOnChange(fn: any): void {
@@ -119,19 +170,19 @@ export class CustomDatepicker {
     this.disabled.set(isDisabled);
   }
 
-  onDayChange(event: Event) {
-    this.selectedDay.set(Number((event.target as HTMLSelectElement).value));
+  onDaySelectChange(value: string) {
+    this.selectedDay.set(Number(value));
     this.updateValue();
   }
 
-  onMonthChange(event: Event) {
-    this.selectedMonth.set(Number((event.target as HTMLSelectElement).value));
+  onMonthSelectChange(value: string) {
+    this.selectedMonth.set(Number(value));
     this.updateDaysInMonth();
     this.updateValue();
   }
 
-  onYearChange(event: Event) {
-    this.selectedYear.set(Number((event.target as HTMLSelectElement).value));
+  onYearSelectChange(value: string) {
+    this.selectedYear.set(Number(value));
     this.updateDaysInMonth();
     this.updateValue();
   }
@@ -141,8 +192,7 @@ export class CustomDatepicker {
     const yearBE = this.selectedYear();
 
     if (month === null || yearBE === null) {
-      const days = Array.from({length: 31}, (_, i) => i + 1);
-      this.daysInMonth.set(days);
+      this.daysInMonth.set(Array.from({length: 31}, (_, i) => i + 1));
       return;
     }
 
@@ -151,8 +201,13 @@ export class CustomDatepicker {
     const days = Array.from({length: daysInSelectedMonth}, (_, i) => i + 1);
     this.daysInMonth.set(days);
 
-    if (this.selectedDay() && this.selectedDay()! > daysInSelectedMonth) {
+    if (
+      !this.isSettingFromWriteValue &&
+      this.selectedDay() &&
+      this.selectedDay()! > daysInSelectedMonth
+    ) {
       this.selectedDay.set(null);
+      this.selectedDayValue = '';
     }
   }
 
