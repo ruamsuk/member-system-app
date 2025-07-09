@@ -1,7 +1,8 @@
 import { CommonModule } from '@angular/common';
-import { Component, computed, DestroyRef, effect, inject, OnInit, signal } from '@angular/core';
+import { ChangeDetectorRef, Component, computed, DestroyRef, effect, inject, OnInit, signal } from '@angular/core';
 import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
+import { DomSanitizer } from '@angular/platform-browser';
 import { Member } from '../models/member.model';
 import { District, Province, Subdistrict } from '../models/province.model';
 import { ThaiDatePipe } from '../pipe/thai-date.pipe';
@@ -29,7 +30,8 @@ import { CustomDatepicker } from './custom-datepicker';
     <main class="container mx-auto p-4 md:p-8">
       <!-- Header -->
       <div class="flex justify-between items-center mb-6">
-        <h1 class="text-3xl md:text-4xl font-bold text-gray-800 dark:text-gray-200">รายชื่อสมาชิกชมรม</h1>
+        <h1 class="text-3xl md:text-4xl font-thasadith font-bold text-gray-800 dark:text-gray-200">
+          รายชื่อสมาชิกชมรม</h1>
         @if (authService.currentUser()?.role === 'admin') {
           <button (click)="openAddModal()" class="btn-primary">
             + เพิ่มสมาชิกใหม่
@@ -114,7 +116,7 @@ import { CustomDatepicker } from './custom-datepicker';
                     </p>
                   </div>
                 </div>
-                <div class="p-2 bg-gray-50 dark:bg-gray-800/50 rounded-b-xl flex justify-end gap-1">
+                <div class="p-2 bg-gray-50 dark:bg-gray-800/50 dark:text-gray-400 rounded-b-xl flex justify-end gap-1">
                   <button (click)="openDetailModal(member)" class="btn-icon" title="ดูรายละเอียด">
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-5 h-5">
                       <path fill-rule="evenodd"
@@ -137,11 +139,14 @@ import { CustomDatepicker } from './custom-datepicker';
                       </svg>
                     </button>
                   }
+                  @for (_ of emptySlots(); track _) {
+                    <div class="invisible"></div>
+                  }
                 </div>
               </div>
             } @empty {
               <div class="bg-white p-8 rounded-xl shadow-lg text-center dark:bg-gray-800">
-                <p class="text-gray-500 dark:text-gray-400">ไม่พบข้อมูลสมาชิก</p>
+                <p class="w-full text-gray-500 dark:text-gray-400">ไม่พบข้อมูลสมาชิก</p>
               </div>
             }
           </div>
@@ -176,7 +181,7 @@ import { CustomDatepicker } from './custom-datepicker';
               <h2 class="text-2xl font-semibold text-gray-700 dark:text-gray-200 mb-6">รายละเอียดสมาชิก</h2>
               <div class="flex flex-col sm:flex-row items-center sm:items-start gap-6">
                 <img class="h-32 w-32 rounded-full object-cover ring-4 ring-blue-200"
-                     [src]="selectedMember()!.photoURL || ' https://i.pravatar.cc/150?u=' + selectedMember()!.id"
+                     [src]="selectedMember()!.photoURL || 'https://i.pravatar.cc/150?u=' + selectedMember()!.id"
                      alt="Member Avatar">
                 <div class="flex-1 text-center sm:text-left">
                   <p class="text-xl font-bold text-gray-800 dark:text-gray-200">
@@ -189,7 +194,7 @@ import { CustomDatepicker } from './custom-datepicker';
                      [class.dark:text-green-400]="selectedMember()!.alive !== 'เสียชีวิตแล้ว'">
                     {{ selectedMember()!.alive }}
                   </p>
-                  <div class="mt-4 text-sm space-y-1">
+                  <div class="mt-4 text-md space-y-1">
                     <p class="text-gray-600 dark:text-gray-300">
                       <strong>โทรศัพท์:</strong> {{ selectedMember()!.phone || '-' }}</p>
                     <p class="text-gray-600 dark:text-gray-300">
@@ -218,7 +223,7 @@ import { CustomDatepicker } from './custom-datepicker';
                 <div class="flex flex-col items-center mb-6">
                   <div class="relative">
                     <img class="h-24 w-24 rounded-full object-cover ring-4 ring-blue-200"
-                         [src]="imagePreviewUrl() || ' https://i.pravatar.cc/150?u=new_contact'"
+                         [src]="selectedMember()?.photoURL || 'https://i.pravatar.cc/150?u=' + selectedMember()?.id"
                          alt="Member Picture Preview">
                     <button type="button" (click)="fileInput.click()"
                             class="absolute -bottom-1 -right-1 bg-white p-1.5 rounded-full shadow-md hover:bg-gray-100 transition duration-200 dark:bg-gray-700 dark:hover:bg-gray-600"
@@ -264,7 +269,7 @@ import { CustomDatepicker } from './custom-datepicker';
                   <div>
                     <div class="mb-4">
                       <label class="form-label">สถานะ</label>
-                      <select formControlName="alive" class="form-input"
+                      <select formControlName="alive" class="form-input "
                               [class.text-gray-400]="!memberForm.get('alive')?.value">
                         <option value="" disabled>-- เลือกสถานะ --</option>
                         <option value="ยังมีชีวิตอยู่">ยังมีชีวิตอยู่</option>
@@ -309,6 +314,8 @@ export class MemberListComponent implements OnInit {
   private destroyRef = inject(DestroyRef);
   private dialogService = inject(DialogService);
   private addressService = inject(AddressService);
+  private sanitizer = inject(DomSanitizer);
+  private cdr = inject(ChangeDetectorRef);
 
   // --- Data Signals ---
   allProvinces = signal<Province[]>([]);
@@ -360,6 +367,13 @@ export class MemberListComponent implements OnInit {
 
   totalPages = computed(() => Math.ceil(this.filteredAndSortedMembers().length / this.itemsPerPage()));
 
+  readonly emptySlots = computed(() => {
+    const count = this.paginatedMembers().length;
+    const remainder = count % 3;
+    return remainder === 0 ? [] : Array(3 - remainder);
+  });
+
+
   constructor() {
     this.loadingService.show();
     effect(() => {
@@ -371,8 +385,16 @@ export class MemberListComponent implements OnInit {
 
   ngOnInit(): void {
     this.initializeForm();
-    this.addressService.getProvinces().subscribe(data => this.allProvinces.set(data));
-    this.addressService.getDistricts().subscribe(data => this.allDistricts.set(data));
+    this.addressService.getProvinces()
+      .subscribe(data => {
+        this.allProvinces.set(data);
+        this.cdr.detectChanges();
+      });
+    this.addressService.getDistricts()
+      .subscribe(data => {
+        this.allDistricts.set(data);
+        this.cdr.detectChanges();
+      });
     this.addressService.getSubdistricts().subscribe(data => this.allSubdistricts.set(data));
   }
 

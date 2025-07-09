@@ -16,7 +16,7 @@ import { AddressService } from '../services/address.service';
     }
   ],
   template: `
-    <div class="text-gray-900 dark:text-gray-600 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-2">
+    <div class="text-gray-900 dark:text-gray-400 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-2">
       <!-- Province Selector -->
       <select [disabled]="disabled()" (change)="onProvinceChange($event)" class="form-select">
         <option value="" disabled selected>-- จังหวัด --</option>
@@ -117,15 +117,20 @@ export class CustomAddress implements ControlValueAccessor, AfterViewInit {
         // console.log('validProvince', validProvince);
         // console.log('validDistrict', validDistrict);
         // console.log('validSubdistrict', validSubdistrict);
-
-        this.selectedProvinceId.set(validProvince?.id ?? null);
-        queueMicrotask(() => {
+        setTimeout(() => {
+          this.selectedProvinceId.set(validProvince?.id ?? null);
           this.selectedDistrictId.set(validProvince && validDistrict ? validDistrict.id : null);
-        });
-
-        queueMicrotask(() => {
           this.selectedSubdistrictId.set(validDistrict && validSubdistrict ? validSubdistrict.id : null);
         });
+
+        // this.selectedProvinceId.set(validProvince?.id ?? null);
+        // queueMicrotask(() => {
+        //   this.selectedDistrictId.set(validProvince && validDistrict ? validDistrict.id : null);
+        // });
+        //
+        // queueMicrotask(() => {
+        //   this.selectedSubdistrictId.set(validDistrict && validSubdistrict ? validSubdistrict.id : null);
+        // });
 
         // if (validProvince && validDistrict) {
         //   queueMicrotask(() => {
@@ -142,7 +147,12 @@ export class CustomAddress implements ControlValueAccessor, AfterViewInit {
         //   // this.selectedSubdistrictId.set(null);
         // }
       } else {
-        queueMicrotask(() => {
+        // queueMicrotask(() => {
+        //   this.selectedProvinceId.set(null);
+        //   this.selectedDistrictId.set(null);
+        //   this.selectedSubdistrictId.set(null);
+        // });
+        setTimeout(() => {
           this.selectedProvinceId.set(null);
           this.selectedDistrictId.set(null);
           this.selectedSubdistrictId.set(null);
@@ -162,7 +172,10 @@ export class CustomAddress implements ControlValueAccessor, AfterViewInit {
   }
 
   ngAfterViewInit(): void {
-    this.viewReady.set(true);
+    setTimeout(() => {
+      this.viewReady.set(true);
+    });
+
   }
 
   // --- Implementation ของ ControlValueAccessor ---

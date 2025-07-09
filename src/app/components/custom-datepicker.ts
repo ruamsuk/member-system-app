@@ -14,7 +14,7 @@ import { ControlValueAccessor, FormsModule, NG_VALUE_ACCESSOR } from '@angular/f
     },
   ],
   template: `
-    <div class="flex gap-2 text-gray-900 dark:text-gray-600">
+    <div class="flex gap-2 text-gray-900 dark:text-gray-400">
       <!-- วัน -->
       <select
         [disabled]="disabled()"
