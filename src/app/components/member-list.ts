@@ -2,7 +2,6 @@ import { CommonModule } from '@angular/common';
 import { ChangeDetectorRef, Component, computed, DestroyRef, effect, inject, OnInit, signal } from '@angular/core';
 import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
-import { DomSanitizer } from '@angular/platform-browser';
 import { Member } from '../models/member.model';
 import { District, Province, Subdistrict } from '../models/province.model';
 import { ThaiDatePipe } from '../pipe/thai-date.pipe';
@@ -11,22 +10,23 @@ import { AuthService } from '../services/auth.service';
 import { CountAgeService } from '../services/count-age.service';
 import { LoadingService } from '../services/loading.service';
 import { MembersService } from '../services/members.service';
+import { ToastService } from '../services/toast.service';
 import { DialogService } from '../shared/services/dialog';
 import { CustomAddress } from './custom-address';
 import { CustomDatepicker } from './custom-datepicker';
 
 @Component({
-  selector: 'app-member-list',
-  standalone: true,
-  imports: [
-    CommonModule,
-    ReactiveFormsModule,
-    FormsModule,
-    ThaiDatePipe,
-    CustomAddress,
-    CustomDatepicker
-  ],
-  template: `
+	selector: 'app-member-list',
+	standalone: true,
+	imports: [
+		CommonModule,
+		ReactiveFormsModule,
+		FormsModule,
+		ThaiDatePipe,
+		CustomAddress,
+		CustomDatepicker
+	],
+	template: `
     <main class="container mx-auto p-4 md:p-8">
       <!-- Header -->
       <div class="flex justify-between items-center mb-6">
@@ -128,7 +128,7 @@ import { CustomDatepicker } from './custom-datepicker';
                     <button (click)="openEditModal(member)" class="btn-icon" title="แก้ไข">
                       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-5 h-5">
                         <path
-                          d="m2.695 14.762-1.262 3.155a.5.5 0 0 0 .65.65l3.155-1.262a4 4 0 0 0 1.343-.886L17.5 5.501a2.121 2.121 0 0 0-3-3L3.58 13.42a4 4 0 0 0-.886 1.343Z"/>
+                                d="m2.695 14.762-1.262 3.155a.5.5 0 0 0 .65.65l3.155-1.262a4 4 0 0 0 1.343-.886L17.5 5.501a2.121 2.121 0 0 0-3-3L3.58 13.42a4 4 0 0 0-.886 1.343Z"/>
                       </svg>
                     </button>
                     <button (click)="onDelete(member)" class="btn-icon-danger" title="ลบ">
@@ -153,16 +153,35 @@ import { CustomDatepicker } from './custom-datepicker';
 
           <!-- Pagination -->
           @if (totalPages() > 1) {
-            <div class="mt-8 flex justify-center items-center gap-4">
-              <button (click)="previousPage()" [disabled]="currentPage() === 1"
-                      class="px-4 py-2 bg-white border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed dark:bg-gray-700 dark:text-gray-300 dark:border-gray-600 dark:hover:bg-gray-600">
-                Previous
+            <!-- Paginator UI (ฉบับอัปเกรด) -->
+            <div class="mt-8 flex justify-center items-center gap-2">
+              <!-- First Page Button -->
+              <button (click)="firstPage()" [disabled]="currentPage() === 1" class="btn-paginator dark:text-gray-300">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-5 h-5">
+                  <path fill-rule="evenodd"
+                        d="M15.79 14.77a.75.75 0 0 1-1.06 0l-4.5-4.5a.75.75 0 0 1 0-1.06l4.5-4.5a.75.75 0 1 1 1.06 1.06L11.81 10l3.98 3.98a.75.75 0 0 1 0 1.06ZM9.79 14.77a.75.75 0 0 1-1.06 0l-4.5-4.5a.75.75 0 0 1 0-1.06l4.5-4.5a.75.75 0 1 1 1.06 1.06L5.81 10l3.98 3.98a.75.75 0 0 1 0 1.06Z"
+                        clip-rule="evenodd"/>
+                </svg>
               </button>
+              <!-- Previous Button -->
+              <button (click)="previousPage()" [disabled]="currentPage() === 1"
+                      class="btn-paginator dark:text-gray-300">Previous
+              </button>
+              <!-- Page Info -->
               <span class="text-sm text-gray-700 dark:text-gray-300">Page {{ currentPage() }}
                 of {{ totalPages() }}</span>
+              <!-- Next Button -->
               <button (click)="nextPage()" [disabled]="currentPage() === totalPages()"
-                      class="px-4 py-2 bg-white border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed dark:bg-gray-700 dark:text-gray-300 dark:border-gray-600 dark:hover:bg-gray-600">
-                Next
+                      class="btn-paginator dark:text-gray-300">Next
+              </button>
+              <!-- Last Page Button -->
+              <button (click)="lastPage()" [disabled]="currentPage() === totalPages()"
+                      class="btn-paginator dark:text-gray-300">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-5 h-5">
+                  <path fill-rule="evenodd"
+                        d="M4.21 5.23a.75.75 0 0 1 1.06 0l4.5 4.5a.75.75 0 0 1 0 1.06l-4.5 4.5a.75.75 0 1 1-1.06-1.06L8.19 10 4.21 6.02a.75.75 0 0 1 0-1.06ZM10.21 5.23a.75.75 0 0 1 1.06 0l4.5 4.5a.75.75 0 0 1 0 1.06l-4.5 4.5a.75.75 0 1 1-1.06-1.06L14.19 10l-3.98-3.98a.75.75 0 0 1 0-1.06Z"
+                        clip-rule="evenodd"/>
+                </svg>
               </button>
             </div>
           }
@@ -231,7 +250,7 @@ import { CustomDatepicker } from './custom-datepicker';
                       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"
                            class="w-5 h-5 text-gray-700 dark:text-gray-200">
                         <path
-                          d="m2.695 14.762-1.262 3.155a.5.5 0 0 0 .65.65l3.155-1.262a4 4 0 0 0 1.343-.886L17.5 5.501a2.121 2.121 0 0 0-3-3L3.58 13.42a4 4 0 0 0-.886 1.343Z"/>
+                                d="m2.695 14.762-1.262 3.155a.5.5 0 0 0 .65.65l3.155-1.262a4 4 0 0 0 1.343-.886L17.5 5.501a2.121 2.121 0 0 0-3-3L3.58 13.42a4 4 0 0 0-.886 1.343Z"/>
                       </svg>
                     </button>
                   </div>
@@ -302,275 +321,304 @@ import { CustomDatepicker } from './custom-datepicker';
         </div>
       </div>
     }
-  `,
-  styles: ``,
+	`,
+	styles: ``,
 })
 export class MemberListComponent implements OnInit {
-  private fb = inject(FormBuilder);
-  private membersService = inject(MembersService);
-  authService = inject(AuthService);
-  loadingService = inject(LoadingService);
-  countAgeService = inject(CountAgeService);
-  private destroyRef = inject(DestroyRef);
-  private dialogService = inject(DialogService);
-  private addressService = inject(AddressService);
-  private sanitizer = inject(DomSanitizer);
-  private cdr = inject(ChangeDetectorRef);
+	private fb = inject(FormBuilder);
+	private membersService = inject(MembersService);
+	authService = inject(AuthService);
+	loadingService = inject(LoadingService);
+	countAgeService = inject(CountAgeService);
+	private destroyRef = inject(DestroyRef);
+	private dialogService = inject(DialogService);
+	private addressService = inject(AddressService);
+	private cdr = inject(ChangeDetectorRef);
+	private toastService = inject(ToastService);
 
-  // --- Data Signals ---
-  allProvinces = signal<Province[]>([]);
-  allDistricts = signal<District[]>([]);
-  allSubdistricts = signal<Subdistrict[]>([]);
+	// --- Data Signals ---
+	allProvinces = signal<Province[]>([]);
+	allDistricts = signal<District[]>([]);
+	allSubdistricts = signal<Subdistrict[]>([]);
 
-  // --- State Signals ---
-  members = toSignal(this.membersService.getMembers(), {initialValue: undefined});
-  searchTerm = signal('');
-  sortDirection = signal<'asc' | 'desc' | 'none'>('none');
-  currentPage = signal(1);
-  itemsPerPage = signal(8);
-  isModalOpen = signal(false);
-  selectedMember = signal<Member | null>(null);
-  modalMode = signal<'view' | 'form'>('form');
-  memberForm!: FormGroup;
-  selectedFile = signal<File | null>(null);
-  imagePreviewUrl = signal<string | null>(null);
-  isEditing = computed(() => !!this.selectedMember() && this.modalMode() === 'form');
+	// --- State Signals ---
+	members = toSignal(this.membersService.getMembers(), {initialValue: undefined});
+	searchTerm = signal('');
+	sortDirection = signal<'asc' | 'desc' | 'none'>('none');
+	currentPage = signal(1);
+	itemsPerPage = signal(9);
+	isModalOpen = signal(false);
+	selectedMember = signal<Member | null>(null);
+	modalMode = signal<'view' | 'form'>('form');
+	memberForm!: FormGroup;
+	selectedFile = signal<File | null>(null);
+	imagePreviewUrl = signal<string | null>(null);
+	isEditing = computed(() => !!this.selectedMember() && this.modalMode() === 'form');
 
-  // --- Options ---
-  readonly rankOptions = ['น.อ.ร.', 'ร.ต.อ.', 'พ.ต.ต.', 'พ.ต.ท.', 'พ.ต.อ.'];
+	// --- Options ---
+	readonly rankOptions = ['น.อ.ร.', 'ร.ต.อ.', 'พ.ต.ต.', 'พ.ต.ท.', 'พ.ต.อ.'];
 
-  // --- Computed Signals for Display ---
-  filteredAndSortedMembers = computed(() => {
-    const term = this.searchTerm().toLowerCase();
-    const direction = this.sortDirection();
-    let membersToShow = [...(this.members() ?? [])];
-    if (term) {
-      membersToShow = membersToShow.filter(m =>
-        (m.firstname || '').toLowerCase().includes(term) ||
-        (m.lastname || '').toLowerCase().includes(term) ||
-        (m.alive || '').toLowerCase().includes(term)
-      );
-    }
-    if (direction === 'asc') {
-      membersToShow.sort((a, b) => (a.firstname || '').localeCompare(b.firstname || ''));
-    } else if (direction === 'desc') {
-      membersToShow.sort((a, b) => (b.firstname || '').localeCompare(a.firstname || ''));
-    }
-    return membersToShow;
-  });
+	// --- Computed Signals for Display ---
+	filteredAndSortedMembers = computed(() => {
+		const term = this.searchTerm().toLowerCase();
+		const direction = this.sortDirection();
+		let membersToShow = [...(this.members() ?? [])];
 
-  paginatedMembers = computed(() => {
-    const list = this.filteredAndSortedMembers();
-    const start = (this.currentPage() - 1) * this.itemsPerPage();
-    return list.slice(start, start + this.itemsPerPage());
-  });
+		if (term) {
+			membersToShow = membersToShow.filter(m =>
+					(m.firstname || '').toLowerCase().includes(term) ||
+					(m.lastname || '').toLowerCase().includes(term) ||
+					(m.alive || '').toLowerCase().includes(term)
+			);
+		}
+		if (direction === 'asc') {
+			membersToShow.sort((a, b) => (a.firstname || '').localeCompare(b.firstname || ''));
+		} else if (direction === 'desc') {
+			membersToShow.sort((a, b) => (b.firstname || '').localeCompare(a.firstname || ''));
+		}
 
-  totalPages = computed(() => Math.ceil(this.filteredAndSortedMembers().length / this.itemsPerPage()));
+		return membersToShow;
+	});
 
-  readonly emptySlots = computed(() => {
-    const count = this.paginatedMembers().length;
-    const remainder = count % 3;
-    return remainder === 0 ? [] : Array(3 - remainder);
-  });
+	paginatedMembers = computed(() => {
+		const list = this.filteredAndSortedMembers();
+		const start = (this.currentPage() - 1) * this.itemsPerPage();
+		return list.slice(start, start + this.itemsPerPage());
+	});
+
+	totalPages = computed(() => Math.ceil(this.filteredAndSortedMembers().length / this.itemsPerPage()));
+
+	readonly emptySlots = computed(() => {
+		const count = this.paginatedMembers().length;
+		const remainder = count % 3;
+		return remainder === 0 ? [] : Array(3 - remainder);
+	});
 
 
-  constructor() {
-    this.loadingService.show();
-    effect(() => {
-      if (this.members() !== undefined) {
-        this.loadingService.hide();
-      }
-    });
-  }
+	constructor() {
+		this.loadingService.show();
+		effect(() => {
+			if (this.members() !== undefined) {
+				this.loadingService.hide();
+			}
+		});
 
-  ngOnInit(): void {
-    this.initializeForm();
-    this.addressService.getProvinces()
-      .subscribe(data => {
-        this.allProvinces.set(data);
-        this.cdr.detectChanges();
-      });
-    this.addressService.getDistricts()
-      .subscribe(data => {
-        this.allDistricts.set(data);
-        this.cdr.detectChanges();
-      });
-    this.addressService.getSubdistricts().subscribe(data => this.allSubdistricts.set(data));
-  }
+		// +++ Effect ใหม่สำหรับรีเซ็ตหน้าเมื่อมีการค้นหา +++
+		effect(() => {
+			// การเรียก searchTerm() ที่นี่ จะทำให้ effect นี้ทำงานทุกครั้งที่ค่าเปลี่ยน
+			this.searchTerm();
+			// เมื่อมีการค้นหา, ให้กลับไปที่หน้าแรกเสมอ
+			this.currentPage.set(1);
+		});
 
-  initializeForm(member: Member | null = null): void {
-    const addressObj = member?.address?.addressObject
-      ? {
-        provinceId: member.address.addressObject.provinceId,
-        districtId: member.address.addressObject.districtId,
-        subdistrictId: member.address.addressObject.subdistrictId,
-        zipCode: member.address.addressObject.zipCode
-      }
-      : null;
+	}
 
-    if (member?.birthdate && 'seconds' in member.birthdate) {
-      member.birthdate = new Date(member.birthdate.seconds * 1000);
-    }
+	ngOnInit(): void {
+		this.initializeForm();
+		this.addressService.getProvinces()
+				.subscribe(data => {
+					this.allProvinces.set(data);
+					this.cdr.detectChanges();
+				});
+		this.addressService.getDistricts()
+				.subscribe(data => {
+					this.allDistricts.set(data);
+					this.cdr.detectChanges();
+				});
+		this.addressService.getSubdistricts().subscribe(data => this.allSubdistricts.set(data));
+	}
 
-    this.memberForm = this.fb.group({
-      rank: [member?.rank || ''],
-      firstname: [member?.firstname || '', Validators.required],
-      lastname: [member?.lastname || '', Validators.required],
-      phone: [member?.phone || ''],
-      birthdate: [member?.birthdate || null],
-      alive: [member?.alive || 'ยังมีชีวิตอยู่', Validators.required],
-      addressLine1: [member?.address?.line1 || ''],
-      addressObject: [addressObj, Validators.required],
-      photoURL: [member?.photoURL || '']
-    });
+	initializeForm(member: Member | null = null): void {
+		const addressObj = member?.address?.addressObject
+				? {
+					provinceId: member.address.addressObject.provinceId,
+					districtId: member.address.addressObject.districtId,
+					subdistrictId: member.address.addressObject.subdistrictId,
+					zipCode: member.address.addressObject.zipCode
+				}
+				: null;
 
-    const aliveControl = this.memberForm.get('alive');
-    aliveControl?.valueChanges
-      .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe(status => {
-        const addressCtrl = this.memberForm.get('addressObject');
-        if (status === 'เสียชีวิตแล้ว') {
-          addressCtrl?.clearValidators();
-        } else {
-          addressCtrl?.setValidators(Validators.required);
-        }
-        addressCtrl?.updateValueAndValidity();
-      });
-  }
+		if (member?.birthdate && 'seconds' in member.birthdate) {
+			member.birthdate = new Date(member.birthdate.seconds * 1000);
+		}
 
-  // --- UI Action Methods ---
-  openDetailModal(member: Member): void {
-    this.selectedMember.set(member);
-    this.modalMode.set('view');
-    this.isModalOpen.set(true);
-  }
+		this.memberForm = this.fb.group({
+			rank: [member?.rank || ''],
+			firstname: [member?.firstname || '', Validators.required],
+			lastname: [member?.lastname || '', Validators.required],
+			phone: [member?.phone || ''],
+			birthdate: [member?.birthdate || null],
+			alive: [member?.alive || 'ยังมีชีวิตอยู่', Validators.required],
+			addressLine1: [member?.address?.line1 || ''],
+			addressObject: [addressObj, Validators.required],
+			photoURL: [member?.photoURL || '']
+		});
 
-  switchToEditMode(): void {
-    // console.log('switchToEditMode', JSON.stringify(this.selectedMember(), null, 2));
-    if (this.selectedMember()) {
-      this.initializeForm(this.selectedMember());
-      this.imagePreviewUrl.set(this.selectedMember()!.photoURL || null);
-      this.modalMode.set('form');
-    }
-  }
+		const aliveControl = this.memberForm.get('alive');
+		aliveControl?.valueChanges
+				.pipe(takeUntilDestroyed(this.destroyRef))
+				.subscribe(status => {
+					const addressCtrl = this.memberForm.get('addressObject');
+					if (status === 'เสียชีวิตแล้ว') {
+						addressCtrl?.clearValidators();
+					} else {
+						addressCtrl?.setValidators(Validators.required);
+					}
+					addressCtrl?.updateValueAndValidity();
+				});
+	}
 
-  openAddModal(): void {
-    this.selectedMember.set(null);
-    this.initializeForm();
-    this.selectedFile.set(null);
-    this.imagePreviewUrl.set(null);
-    this.modalMode.set('form');
-    this.isModalOpen.set(true);
-  }
+	// --- UI Action Methods ---
+	openDetailModal(member: Member): void {
+		this.selectedMember.set(member);
+		this.modalMode.set('view');
+		this.isModalOpen.set(true);
+	}
 
-  async onDelete(member: Member): Promise<void> {
-    const confirmed = await this.dialogService.open({
-      title: 'ยืนยันการลบข้อมูล',
-      message: `คุณแน่ใจหรือไม่ว่าต้องการลบข้อมูลของ <strong>${member.rank || ''} ${member.firstname} ${member.lastname}</strong>?`
-    });
-    if (confirmed && member.id) {
-      this.loadingService.show();
-      try {
-        await this.membersService.deleteMember(member.id);
-      } catch (err) {
-        console.error('Error deleting member:', err);
-      } finally {
-        this.loadingService.hide();
-      }
-    }
-  }
+	switchToEditMode(): void {
+		// console.log('switchToEditMode', JSON.stringify(this.selectedMember(), null, 2));
+		if (this.selectedMember()) {
+			this.initializeForm(this.selectedMember());
+			this.imagePreviewUrl.set(this.selectedMember()!.photoURL || null);
+			this.modalMode.set('form');
+		}
+	}
 
-  openEditModal(member: Member): void {
-    this.selectedMember.set(member);
-    this.initializeForm(member);
-    this.modalMode.set('form');
-    this.isModalOpen.set(true);
-  }
+	openAddModal(): void {
+		this.selectedMember.set(null);
+		this.initializeForm();
+		this.selectedFile.set(null);
+		this.imagePreviewUrl.set(null);
+		this.modalMode.set('form');
+		this.isModalOpen.set(true);
+	}
 
-  // --- Form Submission ---
-  async onSubmit(): Promise<void> {
-    if (this.memberForm.invalid) {
-      this.memberForm.markAllAsTouched();
-      return;
-    }
-    this.loadingService.show();
-    const {addressLine1, addressObject, ...restOfForm} = this.memberForm.value;
+	async onDelete(member: Member): Promise<void> {
+		const confirmed = await this.dialogService.open({
+			title: 'ยืนยันการลบข้อมูล',
+			message: `คุณแน่ใจหรือไม่ว่าต้องการลบข้อมูลของ <strong>${member.rank || ''} ${member.firstname} ${member.lastname}</strong>?`
+		});
+		if (confirmed && member.id) {
+			this.loadingService.show();
+			try {
+				await this.membersService.deleteMember(member.id);
+			} catch (err) {
+				console.error('Error deleting member:', err);
+			} finally {
+				this.loadingService.hide();
+			}
+		}
+	}
 
-    let dataToSave: any = {
-      ...restOfForm,
-      address: {
-        line1: addressLine1,
-        addressObject: addressObject
-      },
-      photoURL: this.selectedMember()?.photoURL || ''
-    };
+	openEditModal(member: Member): void {
+		this.selectedMember.set(member);
+		this.initializeForm(member);
+		this.modalMode.set('form');
+		this.isModalOpen.set(true);
+	}
 
-    try {
-      const fileToUpload = this.selectedFile();
-      if (fileToUpload) {
-        const memberId = this.selectedMember()?.id || '';
-        dataToSave.photoURL = await this.membersService.uploadMemberImage(fileToUpload, memberId);
-      }
+	// --- Form Submission ---
+	async onSubmit(): Promise<void> {
+		if (this.memberForm.invalid) {
+			this.memberForm.markAllAsTouched();
+			return;
+		}
+		this.loadingService.show();
+		const {addressLine1, addressObject, ...restOfForm} = this.memberForm.value;
 
-      if (this.isEditing() && this.selectedMember()) {
-        const updatedMember = {...this.selectedMember()!, ...dataToSave};
-        await this.membersService.updateMember(updatedMember);
-      } else {
-        await this.membersService.addMember(dataToSave);
-      }
+		let dataToSave: any = {
+			...restOfForm,
+			address: {
+				line1: addressLine1,
+				addressObject: addressObject
+			},
+			photoURL: this.selectedMember()?.photoURL || ''
+		};
 
-      this.closeModal();
-    } catch (error) {
-      console.error('Error saving member:', error);
-    } finally {
-      this.loadingService.hide();
-    }
-  }
+		try {
+			const fileToUpload = this.selectedFile();
+			if (fileToUpload) {
+				const memberId = this.selectedMember()?.id || '';
+				dataToSave.photoURL = await this.membersService.uploadMemberImage(fileToUpload, memberId);
+			}
 
-  closeModal() {
-    this.isModalOpen.set(false);
-    this.selectedMember.set(null);
-    this.selectedFile.set(null);
-  }
+			if (this.isEditing() && this.selectedMember()) {
+				const updatedMember = {...this.selectedMember()!, ...dataToSave};
+				await this.membersService.updateMember(updatedMember);
+			} else {
+				await this.membersService.addMember(dataToSave);
+			}
+			this.toastService.show('บันทึกข้อมูลสมาชิกสำเร็จ', 'success');
+			this.closeModal();
+		} catch (error) {
+			this.toastService.show('เกิดข้อผิดพลาดในการบันทึกข้อมูลสมาชิก', 'error');
+			console.error('Error saving member:', error);
+		} finally {
+			this.loadingService.hide();
+		}
+	}
 
-  onMemberImageSelected(event: Event): void {
-    const file = (event.target as HTMLInputElement).files?.[0];
-    if (file) {
-      this.selectedFile.set(file);
-      this.imagePreviewUrl.set(URL.createObjectURL(file));
-    }
-  }
+	closeModal() {
+		this.isModalOpen.set(false);
+		this.selectedMember.set(null);
+		this.selectedFile.set(null);
+	}
 
-  // --- Helper & Utility Methods ---
-  clearSearch(): void {
-    this.searchTerm.set('');
-  }
+	onMemberImageSelected(event: Event): void {
+		const file = (event.target as HTMLInputElement).files?.[0];
+		if (file) {
+			this.selectedFile.set(file);
+			this.imagePreviewUrl.set(URL.createObjectURL(file));
+		}
+	}
 
-  setSort(direction: 'asc' | 'desc'): void {
-    this.sortDirection.set(direction);
-  }
+	// --- Helper & Utility Methods ---
+	clearSearch(): void {
+		this.searchTerm.set('');
+	}
 
-  goToPage(page: number): void {
-    if (page >= 1 && page <= this.totalPages()) this.currentPage.set(page);
-  }
+	setSort(direction: 'asc' | 'desc'): void {
+		this.sortDirection.set(direction);
+	}
 
-  nextPage(): void {
-    this.goToPage(this.currentPage() + 1);
-  }
+	goToPage(page: number): void {
+		if (page >= 1 && page <= this.totalPages()) this.currentPage.set(page);
+	}
 
-  previousPage(): void {
-    this.goToPage(this.currentPage() - 1);
-  }
+	nextPage(): void {
+		this.goToPage(this.currentPage() + 1);
+	}
 
-  getFullAddress(address: Member['address']): string {
-    if (!address || !address.addressObject || this.allProvinces().length === 0) {
-      return address?.line1 || 'ไม่มีข้อมูลที่อยู่';
-    }
-    const {line1, addressObject} = address;
-    const province = this.allProvinces().find(p => p.id === addressObject.provinceId)?.name_th || '';
-    const district = this.allDistricts().find(d => d.id === addressObject.districtId)?.name_th || '';
-    const subdistrict = this.allSubdistricts().find(s => s.id === addressObject.subdistrictId)?.name_th || '';
+	previousPage(): void {
+		this.goToPage(this.currentPage() - 1);
+	}
 
-    return `${line1 || ''} ${subdistrict} ${district} ${province} ${addressObject.zipCode || ''}`.trim();
-  }
+	// ++ เพิ่มเมธอดใหม่สำหรับ Paginator ++
+	firstPage(): void {
+		this.goToPage(1);
+	}
+
+	lastPage(): void {
+		this.goToPage(this.totalPages());
+	}
+
+	getFullAddress(address: Member['address']): string {
+		if (!address || !address.addressObject || this.allProvinces().length === 0) {
+			return address?.line1 || 'ไม่มีข้อมูลที่อยู่';
+		}
+		const {line1, addressObject} = address;
+		const province = this.allProvinces().find(p => p.id === addressObject.provinceId)?.name_th || '';
+		const district = this.allDistricts().find(d => d.id === addressObject.districtId)?.name_th || '';
+		const subdistrict = this.allSubdistricts().find(s => s.id === addressObject.subdistrictId)?.name_th || '';
+
+		return `${line1 || ''} ${subdistrict} ${district} ${province} ${addressObject.zipCode || ''}`.trim();
+	}
+
+	// ++ เพิ่มเมธอดใหม่สำหรับ Tracking ++
+	trackByMember(index: number, member: Member): string | number {
+		if (typeof member.id === 'string' && member.id.trim() !== '') {
+			return member.id;
+		}
+		return `temp_${index}`; // ใช้ id ถ้ามี ถ้าไม่มีก็ใช้ index
+	}
 }

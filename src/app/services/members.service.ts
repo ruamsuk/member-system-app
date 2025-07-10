@@ -15,6 +15,7 @@ import {
 } from '@angular/fire/firestore';
 import { getDownloadURL, ref, Storage, uploadBytes } from '@angular/fire/storage';
 import { Observable } from 'rxjs';
+import { map } from 'rxjs/operators';
 import { Member } from '../models/member.model';
 
 @Injectable({
@@ -37,7 +38,12 @@ export class MembersService {
     const memberCollection = collection(this.firestore, 'members');
     const userQuery = query(memberCollection, orderBy('firstname', 'asc'));
 
-    return collectionData(userQuery, {idField: 'id'}) as Observable<Member[]>;
+    //return collectionData(userQuery, {idField: 'id'}) as Observable<Member[]>;
+    return (collectionData(userQuery, { idField: 'id' }) as Observable<Member[]>).pipe(
+      // เพิ่ม map operator เพื่อกรองข้อมูลที่ยังไม่มี id ออกไปจาก stream
+      // ซึ่งเป็นข้อมูลชั่วคราวที่เกิดจาก Optimistic Updates
+      map(members => members.filter(member => !!member.id))
+    );
   }
 
   /**
@@ -72,7 +78,7 @@ export class MembersService {
   }
 
   // vvv แก้ไขให้คืนค่าเป็น Promise<DocumentReference> vvv
-  addMember(member: Member): Promise<DocumentReference> {
+  async addMember(member: Member): Promise<DocumentReference> {
     const docRef = collection(this.firestore, 'members');
     return addDoc(docRef, {...member, created: new Date()});
   }
