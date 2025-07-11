@@ -2,6 +2,7 @@ import { Component, effect, inject, signal } from '@angular/core';
 import { Router, RouterLink, RouterOutlet } from '@angular/router';
 import { ToastContainer } from './components/toast-container.component';
 import { AuthService } from './services/auth.service';
+import { LoadingService } from './services/loading.service';
 import { ConfirmDialogComponent } from './shared/components/confirm-dialog/confirm-dialog';
 import { Loading } from './shared/loading';
 
@@ -73,7 +74,8 @@ export class App {
   // 1. สร้าง signal เพื่อเก็บสถานะ dark mode
   isDarkMode = signal<boolean>(this.getInitialTheme());
 
-  constructor() {
+  constructor(private loadingService: LoadingService,) {
+    loadingService.show();
     // 2. สร้าง effect ที่จะทำงานทุกครั้งที่ isDarkMode เปลี่ยนแปลง
     effect(() => {
       const isDark = this.isDarkMode();

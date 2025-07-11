@@ -611,14 +611,18 @@ export class MemberListComponent implements OnInit {
 		const district = this.allDistricts().find(d => d.id === addressObject.districtId)?.name_th || '';
 		const subdistrict = this.allSubdistricts().find(s => s.id === addressObject.subdistrictId)?.name_th || '';
 
-		return `${line1 || ''} ${subdistrict} ${district} ${province} ${addressObject.zipCode || ''}`.trim();
+    if (province != 'กรุงเทพมหานคร') {
+      return `${line1 || ''} ต.${subdistrict} อ.${district} จ.${province} ${addressObject.zipCode || ''}`.trim();
+    } else {
+      return `${line1 || ''} แขวง${subdistrict} ${district} ${province} ${addressObject.zipCode || ''}`.trim();
+    }
 	}
 
-	// ++ เพิ่มเมธอดใหม่สำหรับ Tracking ++
-	trackByMember(index: number, member: Member): string | number {
-		if (typeof member.id === 'string' && member.id.trim() !== '') {
-			return member.id;
-		}
-		return `temp_${index}`; // ใช้ id ถ้ามี ถ้าไม่มีก็ใช้ index
-	}
+	// // ++ เพิ่มเมธอดใหม่สำหรับ Tracking ++
+	// trackByMember(index: number, member: Member): string | number {
+	// 	if (typeof member.id === 'string' && member.id.trim() !== '') {
+	// 		return member.id;
+	// 	}
+	// 	return `temp_${index}`; // ใช้ id ถ้ามี ถ้าไม่มีก็ใช้ index
+	// }
 }
