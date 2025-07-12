@@ -5,9 +5,11 @@ import {
   authState,
   createUserWithEmailAndPassword,
   deleteUser,
+  GoogleAuthProvider,
   sendEmailVerification,
   sendPasswordResetEmail,
   signInWithEmailAndPassword,
+  signInWithPopup,
   signOut,
   updateProfile,
   User,
@@ -104,6 +106,34 @@ export class AuthService {
         // ถ้าผ่าน, คืนค่า userCredential กลับไปตามปกติ
         return userCredential;
       });
+  }
+
+  /**
+   * ++ เพิ่มเมธอดใหม่สำหรับ Google Sign-In ++
+   */
+  async signInWithGoogle(): Promise<UserCredential> {
+    const provider = new GoogleAuthProvider();
+    const userCredential = await signInWithPopup(this.auth, provider);
+    const user = userCredential.user;
+
+    // ตรวจสอบว่าผู้ใช้นี้มีข้อมูลใน collection 'users' ของเราหรือยัง
+    const userDocRef = doc(this.firestore, `users/${user.uid}`);
+    const userDoc = await getDoc(userDocRef);
+
+    if (!userDoc.exists()) {
+      // ถ้าเป็นผู้ใช้ใหม่, สร้าง document ของเขาใน Firestore
+      // โดยกำหนด role เริ่มต้นเป็น 'user'
+      await setDoc(userDocRef, {
+        uid: user.uid,
+        email: user.email,
+        displayName: user.displayName,
+        photoURL: user.photoURL,
+        role: 'user', // กำหนด role เริ่มต้น
+        createdAt: serverTimestamp()
+      }, { merge: true });
+    }
+
+    return userCredential;
   }
 
   async register(credentials: { email: string, pass: string, displayName: string }): Promise<void> {
