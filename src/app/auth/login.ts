@@ -120,7 +120,7 @@ export class Login {
     this.authService.login(credentials)
       .then(() => {
         this.loading.set(false);
-        this.toastService.show('Login successful!', 'success');
+        this.toastService.show('Success', 'Login successful!', 'success');
         this.router.navigate(['/contacts']);
       })
       .catch(error => {
@@ -130,7 +130,7 @@ export class Login {
         } else {
           this.errorMessage = 'Invalid email or password. Please try again.';
         }
-        this.toastService.show(this.errorMessage, 'error');
+        this.toastService.show('Error', `${this.errorMessage}`, 'error');
         console.error('Login error:', error);
         this.loading.set(false);
       });

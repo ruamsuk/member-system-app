@@ -10,7 +10,7 @@ import { ToastMessage, ToastService } from '../services/toast.service';
   ],
   template: `
     <!-- 1. Container หลักสำหรับจัดตำแหน่ง Toast ทั้งหมด -->
-    <div class="fixed top-5 right-5 z-[10000] w-full max-w-sm">
+    <div class="fixed bottom-5 left-1/2 -translate-x-1/2 z-[10000] w-full max-w-sm">
       <div class="flex flex-col-reverse gap-3">
 
         <!-- 2. วนลูปแสดง Toast แต่ละอัน -->
@@ -35,7 +35,7 @@ import { ToastMessage, ToastService } from '../services/toast.service';
                   {{ message.summary }}
                 </strong>
               }
-              <p class="mt-1 text-sm" [ngClass]="getTextColor(message.type, 'text')">
+              <p class="mt-1 text-md" [ngClass]="getTextColor(message.type, 'text')">
                 {{ message.text }}
               </p>
             </div>

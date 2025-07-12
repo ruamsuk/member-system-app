@@ -71,6 +71,7 @@ import { CustomDatepicker } from './custom-datepicker';
                       [class.bg-blue-600]="sortDirection() === 'asc'"
                       [class.text-white]="sortDirection() === 'asc'"
                       [class.bg-gray-200]="sortDirection() !== 'asc'"
+                      [class.dark:text-gray-200]="sortDirection() !== 'asc'"
                       [class.dark:bg-gray-700]="sortDirection() !== 'asc'">
                 A-Z ↓
               </button>
@@ -79,6 +80,7 @@ import { CustomDatepicker } from './custom-datepicker';
                       [class.bg-blue-600]="sortDirection() === 'desc'"
                       [class.text-white]="sortDirection() === 'desc'"
                       [class.bg-gray-200]="sortDirection() !== 'desc'"
+                      [class.dark:text-gray-200]="sortDirection() !== 'desc'"
                       [class.dark:bg-gray-700]="sortDirection() !== 'desc'">
                 Z-A ↑
               </button>
@@ -356,7 +358,7 @@ export class MemberListComponent implements OnInit {
 	isEditing = computed(() => !!this.selectedMember() && this.modalMode() === 'form');
 
 	// --- Options ---
-	readonly rankOptions = ['น.อ.ร.', 'ร.ต.อ.', 'พ.ต.ต.', 'พ.ต.ท.', 'พ.ต.อ.'];
+	readonly rankOptions = ['น.อ.ร.', 'ร.ต.ท.', 'ร.ต.อ.', 'พ.ต.ต.', 'พ.ต.ท.', 'พ.ต.อ.', 'พล.ต.อ.'];
 
 	// --- Computed Signals for Display ---
 	filteredAndSortedMembers = computed(() => {
@@ -548,10 +550,10 @@ export class MemberListComponent implements OnInit {
 			} else {
 				await this.membersService.addMember(dataToSave);
 			}
-			this.toastService.show('บันทึกข้อมูลสมาชิกสำเร็จ', 'success');
+			this.toastService.show('Success', 'บันทึกข้อมูลสมาชิกสำเร็จ', 'success');
 			this.closeModal();
 		} catch (error) {
-			this.toastService.show('เกิดข้อผิดพลาดในการบันทึกข้อมูลสมาชิก', 'error');
+			this.toastService.show('Error', 'เกิดข้อผิดพลาดในการบันทึกข้อมูลสมาชิก', 'error');
 			console.error('Error saving member:', error);
 		} finally {
 			this.loadingService.hide();

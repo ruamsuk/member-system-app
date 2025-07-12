@@ -15,6 +15,7 @@ import {
 } from '@angular/fire/auth';
 import { doc, Firestore, getDoc, serverTimestamp, setDoc } from '@angular/fire/firestore';
 import { getDownloadURL, ref, Storage, uploadBytes } from '@angular/fire/storage';
+import { Router } from '@angular/router';
 import { from, of, switchMap } from 'rxjs';
 import { ToastService } from './toast.service';
 
@@ -31,6 +32,8 @@ export class AuthService {
   private firestore = inject(Firestore); // ใช้ Firestore ในการดึงข้อมูลผู้ใช้
   private storage: Storage = inject(Storage); // ใช้ Storage สำหรับการอัปโหลดรูปภาพ
   private toastService = inject(ToastService); // ใช้สำหรับแสดงข้อความ Toast
+  private router = inject(Router); // ใช้สำหรับการนำทาง
+  private timeout: any;
 
   // สร้าง Signal เพื่อเก็บสถานะผู้ใช้ปัจจุบัน
   public currentUser = toSignal<AppUser | null>(
@@ -63,6 +66,31 @@ export class AuthService {
       })
     )
   );
+
+  constructor() {
+    this.startTimer();
+    if (this.currentUser()) {
+      // ถ้ามีผู้ใช้ล็อกอินอยู่, เริ่มต้น timer ใหม่
+      this.resetTimer();
+    }
+  }
+
+  startTimer() {
+    this.timeout = setTimeout(
+      () => {
+        this.logout().then(() => {
+          console.log('logout');
+          this.router.navigateByUrl('/login').then();
+        });
+      },
+      30 * 60 * 1000,
+    ); // 30 นาที
+  }
+
+  resetTimer() {
+    clearTimeout(this.timeout);
+    this.startTimer();
+  }
 
   async login(credentials: { email: string, pass: string }): Promise<UserCredential> {
     return signInWithEmailAndPassword(this.auth, credentials.email, credentials.pass)
@@ -180,4 +208,5 @@ export class AuthService {
         throw error;
       });
   }
+
 }
