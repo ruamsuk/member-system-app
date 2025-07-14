@@ -1,3 +1,4 @@
+import { NgClass } from '@angular/common';
 import { Component, inject, signal } from '@angular/core';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
@@ -9,7 +10,8 @@ import { ToastService } from '../services/toast.service';
   selector: 'app-login',
   imports: [
     ReactiveFormsModule,
-    RouterLink
+    RouterLink,
+    NgClass
   ],
   template: `
     <div class="min-h-screen bg-gray-100 dark:bg-gray-900 flex items-center justify-center p-4">
@@ -60,13 +62,18 @@ import { ToastService } from '../services/toast.service';
                 <button type="button" (click)="togglePasswordVisibility()" class="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 hover:text-gray-600">
                   @if(passwordVisible()) {
                     <!-- Eye Slash Icon (to hide) -->
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6 dark:text-gray-300">
                       <path stroke-linecap="round" stroke-linejoin="round" d="M3.98 8.223A10.477 10.477 0 0 0 1.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.45 10.45 0 0 1 12 4.5c4.756 0 8.773 3.162 10.065 7.498a10.523 10.523 0 0 1-4.293 5.774M6.228 6.228 3 3m3.228 3.228 3.65 3.65m7.894 7.894L21 21m-3.228-3.228-3.65-3.65m0 0a3 3 0 1 0-4.243-4.243m4.242 4.242L6.228 6.228" />
                     </svg>
                   } @else {
                     <!-- Eye Icon (to show) -->
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6">
-                      <path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 0 1 0-.639l4.418-7.36a1.012 1.012 0 0 1 1.736 0l4.418 7.36a1.012 1.012 0 0 1 0 .639l-4.418 7.36a1.012 1.012 0 0 1-1.736 0l-4.418-7.36ZM12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z" />
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none"
+                         viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"
+                         class="w-6 h-6 dark:text-gray-300">
+                      <path stroke-linecap="round" stroke-linejoin="round"
+                            d="M2.25 12s3.75-6.75 9.75-6.75S21.75 12 21.75 12s-3.75 6.75-9.75 6.75S2.25 12 2.25 12z" />
+                      <path stroke-linecap="round" stroke-linejoin="round"
+                            d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                     </svg>
                   }
                 </button>
@@ -81,7 +88,26 @@ import { ToastService } from '../services/toast.service';
 
             <!-- Submit Button -->
             <div class="mt-2">
-              @if (loadingService.isLoading()) {
+              @if (loading()) {
+                <button type="button"
+                        class="w-full inline-flex justify-center items-center px-4 py-2 font-semibold leading-6 text-sm shadow rounded-md text-white bg-indigo-500 hover:bg-indigo-400 transition ease-in-out duration-150 cursor-not-allowed"
+                >
+                  <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg"
+                       fill="none"
+                       viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor"
+                          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  Processing...
+                </button>
+              } @else {
+                <button type="submit" [disabled]="loginForm.invalid" [ngClass]="{'btn-disabled': loginForm.invalid}"
+                        class="w-full inline-flex justify-center items-center px-4 py-2 font-semibold leading-6 text-lg shadow rounded-md text-white bg-indigo-500 hover:bg-indigo-400 transition ease-in-out duration-150">
+                  Login
+                </button>
+              }
+              <!--@if (loadingService.isLoading()) {
                 <button type="button" class="btn-primary w-full" disabled>
                   <svg class="animate-spin -ml-1 mr-3 h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
                   Processing...
@@ -90,7 +116,7 @@ import { ToastService } from '../services/toast.service';
                 <button type="submit" [disabled]="loginForm.invalid" class="btn-primary w-full">
                   Login
                 </button>
-              }
+              }-->
             </div>
           </form>
 
@@ -240,7 +266,7 @@ export class Login {
         .then(() =>this.router.navigate(['/members'])); // เปลี่ยนเส้นทางไปยังหน้า members หลังจากล็อกอินสำเร็จ
     } catch (error) {
       console.error('Google Sign-In error:', error);
-      this.toastService.show('Error', 'Failed to sign in with Google.', 'error');
+      this.toastService.show('Error', `${error}`, 'error' );
     } finally {
       this.loading.set(false);
     }

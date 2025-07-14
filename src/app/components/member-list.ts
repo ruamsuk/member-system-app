@@ -119,18 +119,20 @@ import { CustomDatepicker } from './custom-datepicker';
                   </div>
                 </div>
                 <div class="p-2 bg-gray-50 dark:bg-gray-800/50 dark:text-gray-400 rounded-b-xl flex justify-end gap-1">
-                  <button (click)="openDetailModal(member)" class="btn-icon" title="ดูรายละเอียด">
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-5 h-5">
-                      <path fill-rule="evenodd"
-                            d="M9 3.5a5.5 5.5 0 1 0 0 11 5.5 5.5 0 0 0 0-11ZM2 9a7 7 0 1 1 12.452 4.391l3.328 3.329a.75.75 0 1 1-1.06 1.06l-3.329-3.328A7 7 0 0 1 2 9Z"
-                            clip-rule="evenodd"/>
-                    </svg>
-                  </button>
+                  @if (authService.currentUser()?.role !== 'user') {
+                    <button (click)="openDetailModal(member)" class="btn-icon" title="ดูรายละเอียด">
+                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-5 h-5">
+                        <path fill-rule="evenodd"
+                              d="M9 3.5a5.5 5.5 0 1 0 0 11 5.5 5.5 0 0 0 0-11ZM2 9a7 7 0 1 1 12.452 4.391l3.328 3.329a.75.75 0 1 1-1.06 1.06l-3.329-3.328A7 7 0 0 1 2 9Z"
+                              clip-rule="evenodd"/>
+                      </svg>
+                    </button>
+                  }
                   @if (authService.currentUser()?.role === 'admin') {
                     <button (click)="openEditModal(member)" class="btn-icon" title="แก้ไข">
                       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-5 h-5">
                         <path
-                                d="m2.695 14.762-1.262 3.155a.5.5 0 0 0 .65.65l3.155-1.262a4 4 0 0 0 1.343-.886L17.5 5.501a2.121 2.121 0 0 0-3-3L3.58 13.42a4 4 0 0 0-.886 1.343Z"/>
+                          d="m2.695 14.762-1.262 3.155a.5.5 0 0 0 .65.65l3.155-1.262a4 4 0 0 0 1.343-.886L17.5 5.501a2.121 2.121 0 0 0-3-3L3.58 13.42a4 4 0 0 0-.886 1.343Z"/>
                       </svg>
                     </button>
                     <button (click)="onDelete(member)" class="btn-icon-danger" title="ลบ">
@@ -244,7 +246,7 @@ import { CustomDatepicker } from './custom-datepicker';
                 <div class="flex flex-col items-center mb-6">
                   <div class="relative">
                     <img class="h-24 w-24 rounded-full object-cover ring-4 ring-blue-200"
-                         [src]="selectedMember()?.photoURL || 'https://i.pravatar.cc/150?u=' + selectedMember()?.id"
+                         [src]="imagePreviewUrl() || 'https://i.pravatar.cc/150?u=' + selectedMember()?.id"
                          alt="Member Picture Preview">
                     <button type="button" (click)="fileInput.click()"
                             class="absolute -bottom-1 -right-1 bg-white p-1.5 rounded-full shadow-md hover:bg-gray-100 transition duration-200 dark:bg-gray-700 dark:hover:bg-gray-600"
@@ -252,7 +254,7 @@ import { CustomDatepicker } from './custom-datepicker';
                       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"
                            class="w-5 h-5 text-gray-700 dark:text-gray-200">
                         <path
-                                d="m2.695 14.762-1.262 3.155a.5.5 0 0 0 .65.65l3.155-1.262a4 4 0 0 0 1.343-.886L17.5 5.501a2.121 2.121 0 0 0-3-3L3.58 13.42a4 4 0 0 0-.886 1.343Z"/>
+                          d="m2.695 14.762-1.262 3.155a.5.5 0 0 0 .65.65l3.155-1.262a4 4 0 0 0 1.343-.886L17.5 5.501a2.121 2.121 0 0 0-3-3L3.58 13.42a4 4 0 0 0-.886 1.343Z"/>
                       </svg>
                     </button>
                   </div>
@@ -323,7 +325,7 @@ import { CustomDatepicker } from './custom-datepicker';
         </div>
       </div>
     }
-	`,
+  `,
 	styles: ``,
 })
 export class MemberListComponent implements OnInit {
@@ -515,6 +517,8 @@ export class MemberListComponent implements OnInit {
 	openEditModal(member: Member): void {
 		this.selectedMember.set(member);
 		this.initializeForm(member);
+    this.selectedFile.set(null);
+    this.imagePreviewUrl.set(member.photoURL || null);
 		this.modalMode.set('form');
 		this.isModalOpen.set(true);
 	}

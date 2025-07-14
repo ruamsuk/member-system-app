@@ -11,7 +11,13 @@ import { ToastService } from '../services/toast.service';
   template: `
     <div class="min-h-screen bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
       <div class="bg-white dark:bg-gray-900  p-8 rounded-xl shadow-lg w-full max-w-md">
-        <h2 class="text-3xl font-bold text-center text-gray-800 dark:text-gray-200 mb-8">Register</h2>
+        <!-- Logo and Title -->
+        <div class="text-center mb-8">
+          <img src="/images/police-shield.png" alt="App Logo" class="w-16 h-16 mx-auto mb-4">
+          <h1 class="text-3xl font-bold text-gray-800 dark:text-gray-200">Member System</h1>
+          <p class="text-gray-500 dark:text-gray-400">Please fill form to Signing to Member System.</p>
+        </div>
+<!--        <h2 class="text-3xl font-bold text-center text-gray-800 dark:text-gray-200 mb-8">Register</h2>-->
         <form [formGroup]="loginForm" (ngSubmit)="onSubmit()">
           <div class="mb-4">
             <label for="displayName" class="block text-gray-600 dark:text-gray-400 font-medium mb-2">Display
