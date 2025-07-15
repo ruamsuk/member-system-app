@@ -1,4 +1,5 @@
 import { Routes } from '@angular/router';
+import { adminGuard } from './auth/admin-guard';
 import { authGuard } from './auth/auth-guard';
 
 export const routes: Routes = [
@@ -30,6 +31,11 @@ export const routes: Routes = [
     path: 'profile',
     loadComponent: () => import('./pages/profile').then(m => m.Profile),
     canActivate: [authGuard]
+  },
+  {
+    path: 'user-management',
+    loadComponent: () => import('./pages/user-management').then(m => m.UserManagement),
+    canActivate: [adminGuard]
   },
 
   // ถ้าไม่เจอ path ไหนเลย ให้ไปที่ /contacts

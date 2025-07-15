@@ -8,6 +8,7 @@ import {
   DocumentReference,
   Firestore,
   getDocs,
+  limit,
   orderBy,
   query,
   updateDoc,
@@ -84,15 +85,24 @@ export class MembersService {
   }
 
   // checkDuplicate สามารถคืนเป็น Promise ได้เช่นกันเพื่อความสอดคล้อง
-  async checkDuplicate(firstname: string, lastname: string): Promise<boolean> {
+  async checkDuplicate(firstname: string, lastname: string, currentMemberId?: string): Promise<boolean> {
     const dbInstance = collection(this.firestore, 'members');
     const q = query(
       dbInstance,
       where('firstname', '==', firstname),
       where('lastname', '==', lastname),
+      limit(1) // จำกัดผลลัพธ์เพียง 1 รายการ
     );
     const querySnapshot = await getDocs(q);
-    return querySnapshot.size > 0;
+
+    if(querySnapshot.empty)
+    {
+      return false; // ไม่เจอข้อมูลซ้ำ
+    }
+
+    // ถ้าเจอข้อมูล, ตรวจสอบว่าเป็นข้อมูลของคนเดียวกับที่กำลังแก้ไขหรือไม่
+    const duplicateDocId = querySnapshot.docs[0].id;
+    return duplicateDocId !== currentMemberId;
   }
 
 }

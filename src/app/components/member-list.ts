@@ -530,7 +530,17 @@ export class MemberListComponent implements OnInit {
 			return;
 		}
 		this.loadingService.show();
-		const {addressLine1, addressObject, ...restOfForm} = this.memberForm.value;
+
+    const { firstname, lastname } = this.memberForm.value;
+    const adminId = this.authService.currentUser()?.uid || '';
+    const isDuplicate = await this.membersService.checkDuplicate(firstname, lastname, adminId);
+
+    if (isDuplicate) {
+      this.loadingService.hide();
+      this.toastService.show('Warning', 'สมาชิกนี้มีอยู่แล้วในระบบ', 'warning');
+      return;
+    }
+    const {addressLine1, addressObject, ...restOfForm} = this.memberForm.value;
 
 		let dataToSave: any = {
 			...restOfForm,

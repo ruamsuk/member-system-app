@@ -49,6 +49,9 @@ import { Loading } from './shared/loading';
                      [src]="authService.currentUser()?.photoURL || 'https://i.pravatar.cc/150?u=default'"
                      alt="My Profile Picture">
               </a>
+              @if (authService.currentUser()?.role === 'admin') {
+                <a routerLink="/user-management" class="text-sm font-medium text-gray-500 hover:text-gray-700 dark:text-gray-300 dark:hover:text-white">Manage Users</a>
+              }
               <button (click)="logout()"
                       class="bg-red-500 text-white text-sm font-bold py-2 px-3 rounded-lg hover:bg-red-600 transition">
                 Logout

@@ -15,15 +15,25 @@ import {
   User,
   UserCredential
 } from '@angular/fire/auth';
-import { doc, Firestore, getDoc, serverTimestamp, setDoc } from '@angular/fire/firestore';
+import {
+  collection,
+  doc,
+  Firestore,
+  getDoc,
+  getDocs,
+  serverTimestamp,
+  setDoc,
+  updateDoc
+} from '@angular/fire/firestore';
 import { getDownloadURL, ref, Storage, uploadBytes } from '@angular/fire/storage';
 import { Router } from '@angular/router';
-import { from, of, switchMap } from 'rxjs';
+import { from, Observable, of, switchMap } from 'rxjs';
+import { map } from 'rxjs/operators';
 import { ToastService } from './toast.service';
 
 // ++ สร้าง Interface สำหรับข้อมูล User ของเรา ++
 export interface AppUser extends User {
-  role?: 'admin' | 'user';
+  role?: 'admin' | 'member' | 'user';
 }
 
 @Injectable({
@@ -92,6 +102,30 @@ export class AuthService {
   resetTimer() {
     clearTimeout(this.timeout);
     this.startTimer();
+  }
+
+  /**
+   * ดึงข้อมูลผู้ใช้ทั้งหมดจาก collection 'users'
+   * @returns Observable ของ array ผู้ใช้ทั้งหมด
+   */
+  getAllUsers(): Observable<AppUser[]> {
+    const usersCollection = collection(this.firestore, 'users');
+    return from(getDocs(usersCollection)).pipe(
+      map(querySnapshot => {
+        return querySnapshot.docs.map(doc => doc.data() as AppUser);
+      })
+    );
+  }
+
+  /**
+   * อัปเดต role ของผู้ใช้ใน Firestore
+   * @param uid - User ID ของผู้ใช้ที่ต้องการอัปเดต
+   * @param role - Role ใหม่ที่จะกำหนด ('admin', 'member', หรือ 'user')
+   * @returns Promise<void>
+   */
+  updateUserRole(uid: string, role: 'admin' | 'member' | 'user'): Promise<void> {
+    const userDocRef = doc(this.firestore, `users/${uid}`);
+    return updateDoc(userDocRef, { role: role });
   }
 
   async login(credentials: { email: string, pass: string }): Promise<UserCredential> {
