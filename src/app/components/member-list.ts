@@ -535,7 +535,7 @@ export class MemberListComponent implements OnInit {
     const adminId = this.authService.currentUser()?.uid || '';
     const isDuplicate = await this.membersService.checkDuplicate(firstname, lastname, adminId);
 
-    if (isDuplicate) {
+    if (isDuplicate && !this.isEditing()) {
       this.loadingService.hide();
       this.toastService.show('Warning', 'สมาชิกนี้มีอยู่แล้วในระบบ', 'warning');
       return;

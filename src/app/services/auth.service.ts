@@ -1,4 +1,4 @@
-import { inject, Injectable } from '@angular/core';
+import { effect, inject, Injectable } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import {
   Auth,
@@ -18,6 +18,7 @@ import {
 import {
   collection,
   doc,
+  docData,
   Firestore,
   getDoc,
   getDocs,
@@ -47,28 +48,24 @@ export class AuthService {
   private router = inject(Router); // ใช้สำหรับการนำทาง
   private timeout: any;
 
-  // สร้าง Signal เพื่อเก็บสถานะผู้ใช้ปัจจุบัน
+  // 1.สร้าง Signal เพื่อเก็บสถานะผู้ใช้ปัจจุบัน
   public currentUser = toSignal<AppUser | null>(
     authState(this.auth).pipe(
       switchMap(user => {
         if (user) {
-          // ++ ถ้ามี user, ไปดึงข้อมูล role จาก collection 'users' ++
+          // ถ้ามี user, ให้ "รับฟัง" การเปลี่ยนแปลงของ document ของเขาใน Firestore
           const userDocRef = doc(this.firestore, `users/${user.uid}`);
-          return from(getDoc(userDocRef)).pipe(
-            switchMap(docSnapshot => {
-              if (docSnapshot.exists()) {
-                const firestoreData = docSnapshot.data();
-                // ++ สร้าง AppUser โดยรวมข้อมูลจาก Firestore และ Auth ++
-                const combineUser = {
+          return docData(userDocRef).pipe(
+            map(firestoreData => {
+              // เมื่อไหร่ก็ตามที่ข้อมูลใน Firestore เปลี่ยน, ให้สร้าง object ใหม่
+              if (firestoreData) {
+                return {
                   ...user,
                   role: firestoreData['role'],
-                  photoURL: firestoreData['photoURL'] || user.photoURL, // ใช้ photoURL จาก Firestore ถ้ามี
+                  photoURL: firestoreData['photoURL'] || user.photoURL,
                 } as AppUser;
-                return of(combineUser);
-              } else {
-                // ถ้าไม่มีข้อมูลใน Firestore (อาจจะยังไม่ถูกสร้าง), คืนค่า user ปกติ
-                return of(user as AppUser);
               }
+              return user as AppUser; // ถ้าไม่มี doc ใน firestore
             })
           );
         } else {
@@ -80,11 +77,14 @@ export class AuthService {
   );
 
   constructor() {
-    this.startTimer();
-    if (this.currentUser()) {
-      // ถ้ามีผู้ใช้ล็อกอินอยู่, เริ่มต้น timer ใหม่
-      this.resetTimer();
-    }
+    effect(() => {
+      const user = this.currentUser();
+      if (user) {
+        this.resetTimer(); // รีเซ็ต timer เมื่อมีผู้ใช้ล็อกอิน
+      } else {
+        clearTimeout(this.timeout); // เคลียร์ timer ถ้าไม่มีผู้ใช้ล็อกอิน
+      }
+    });
   }
 
   startTimer() {
@@ -247,24 +247,24 @@ export class AuthService {
       return Promise.reject('Authentication Error: User not logged in');
     }
 
-    console.log(`%c[AuthService] 1. Starting profile picture update for user: ${user.uid}`, 'color: yellow; font-weight: bold;');
-    console.log(`%c[AuthService] 2. New photoURL to be saved:`, 'color: yellow; font-weight: bold;', photoURL);
+    // console.log(`%c[AuthService] 1. Starting profile picture update for user: ${user.uid}`, 'color: yellow; font-weight: bold;');
+    // console.log(`%c[AuthService] 2. New photoURL to be saved:`, 'color: yellow; font-weight: bold;', photoURL);
 
 
     // 1. อัปเดตโปรไฟล์ใน Firebase Authentication
     return updateProfile(user, {photoURL: photoURL})
       .then(() => {
-        console.log(`%c[AuthService] 3. Successfully updated Firebase Auth profile.`, 'color: green; font-weight: bold;');
+        // console.log(`%c[AuthService] 3. Successfully updated Firebase Auth profile.`, 'color: green; font-weight: bold;');
 
         // 2. อัปเดต URL ใน Firestore 'users' collection (เหมือนเดิม)
         const userDocRef = doc(this.firestore, `users/${user.uid}`);
-        console.log(`%c[AuthService] 4. Preparing to update Firestore document at path: ${userDocRef.path}`, 'color: blue; font-weight: bold;');
+        // console.log(`%c[AuthService] 4. Preparing to update Firestore document at path: ${userDocRef.path}`, 'color: blue; font-weight: bold;');
 
         return setDoc(userDocRef, {photoURL: photoURL}, {merge: true});
       })
       .then(() => {
         console.log(`%c[AuthService] 5. Successfully updated Firestore 'users' collection.`, 'color: green; font-weight: bold;');
-        this.toastService.show('Profile picture updated successfully.', 'success');
+       // this.toastService.show('Success B', 'Profile picture updated successfully.', 'success');
       })
       .catch(error => {
         console.error(`%c[AuthService] ERROR during profile update process:`, 'color: red; font-weight: bold;', error);

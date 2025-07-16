@@ -1,8 +1,7 @@
-import { Component, effect, inject, signal } from '@angular/core';
+import { Component, effect, HostListener, inject, signal } from '@angular/core';
 import { Router, RouterLink, RouterOutlet } from '@angular/router';
 import { ToastContainer } from './components/toast-container.component';
 import { AuthService } from './services/auth.service';
-import { LoadingService } from './services/loading.service';
 import { ConfirmDialogComponent } from './shared/components/confirm-dialog/confirm-dialog';
 import { Loading } from './shared/loading';
 
@@ -74,10 +73,16 @@ export class App {
   public authService = inject(AuthService);
   public router = inject(Router);
 
+  @HostListener('window:mousemove')
+  @HostListener('window:keydown')
+  resetTimer() {
+    this.authService.resetTimer();
+  }
+
   // 1. สร้าง signal เพื่อเก็บสถานะ dark mode
   isDarkMode = signal<boolean>(this.getInitialTheme());
 
-  constructor(private loadingService: LoadingService,) {
+  constructor() {
     // 2. สร้าง effect ที่จะทำงานทุกครั้งที่ isDarkMode เปลี่ยนแปลง
     effect(() => {
       const isDark = this.isDarkMode();

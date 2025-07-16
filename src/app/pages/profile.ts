@@ -22,9 +22,7 @@ import { DialogService } from '../shared/services/dialog';
           <div class="flex flex-col items-center mb-6">
             <div class="relative">
               <img class="h-36 w-36 rounded-full object-cover ring-4 ring-blue-200"
-                   [src]="authService.currentUser()?.photoURL || 'https://i.pravatar.cc/150?u=default'"
-                   alt="Profile Picture">
-
+                   [src]="imagePreviewUrl()" alt="Profile Picture">
               @if (isUploading()) {
                 <div class="absolute inset-0 bg-white/70 flex items-center justify-center rounded-full">
                   <div class="w-8 h-8 border-4 border-dashed rounded-full animate-spin border-blue-600"></div>
@@ -125,6 +123,13 @@ export class Profile {
   private loadingService = inject(LoadingService);
 
   isUploading = signal(false);
+  imagePreviewUrl = signal<string | null>(null);
+
+  constructor() {
+    // สามารถใช้ imagePreviewUrl เพื่อแสดงตัวอย่างรูปภาพที่เลือกได้
+    // เช่นใน <img [src]="imagePreviewUrl()">
+    this.imagePreviewUrl.set(this.authService.currentUser()?.photoURL || 'https://i.pravatar.cc/150?u=default');
+  }
 
   /**
    * ถูกเรียกเมื่อผู้ใช้เลือกไฟล์รูปภาพใหม่
@@ -141,6 +146,7 @@ export class Profile {
     this.isUploading.set(true);
     // ไม่จำเป็นต้องใช้ Global spinner เพราะเรามี spinner เฉพาะจุดแล้ว
     // this.loadingService.show();
+    if (file) this.imagePreviewUrl.set(URL.createObjectURL(file));
 
     try {
       // 1. เรียก Service ให้อัปโหลดไฟล์ และรอเอา URL กลับมา
@@ -150,9 +156,9 @@ export class Profile {
       await this.authService.updateProfilePicture(downloadUrl);
 
       // อาจจะแสดง Toast แจ้งว่าสำเร็จ
-      this.toastService.show('Profile picture updated successfully.', 'success');
+      this.toastService.show('Success', 'Profile picture updated successfully.', 'success');
       console.log('Profile picture updated successfully!');
-
+      this.imagePreviewUrl.set(downloadUrl);
     } catch (error) {
       console.error('Error during file upload or profile update:', error);
       this.toastService.show('Error', 'Could not update profile picture. Please try again later.', 'error');
