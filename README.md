@@ -1,59 +1,100 @@
-# MemberSystemApp
+# ระบบจัดการข้อมูลสมาชิก (member-system-app)
 
-This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 20.0.4.
+ระบบสำหรับจัดการข้อมูลสมาชิกนักเรียนอบรมหลักสูตร "พนักงานสอบสวน 25" พัฒนาด้วยเทคโนโลยีล่าสุดของ Angular เพื่อประสิทธิภาพและความเร็วสูงสุด
 
-## Development server
+## ✨ คุณสมบัติหลัก (Key Features)
 
-To start a local development server, run:
+- **จัดการข้อมูลสมาชิก:** รองรับการทำงานพื้นฐานครบถ้วน (เพิ่ม, ลบ, แก้ไข, ค้นหา)
+- **สถาปัตยกรรมสมัยใหม่:** พัฒนาด้วย Angular Standalone Components ทำให้โปรเจกต์มีขนาดเล็กและไม่ซับซ้อน
+- **ประสิทธิภาพสูง:** ใช้ Zoneless Change Detection เพื่อลดการทำงานที่ไม่จำเป็นและเพิ่มความเร็วในการตอบสนองของแอปพลิเคชัน
+- **ดีไซน์เรียบง่าย:** ออกแบบด้วย Tailwind CSS v4 โดยไม่ใช้ไลบรารี UI ภายนอก เพื่อให้สามารถปรับแต่งได้อย่างอิสระและมีขนาดเล็กที่สุด
 
-```bash
-ng serve
-```
+## 🛠️ เทคโนโลยีที่ใช้ (Tech Stack)
 
-Once the server is running, open your browser and navigate to `http://localhost:4200/`. The application will automatically reload whenever you modify any of the source files.
+- **Framework:** Angular v20 (Standalone, Zoneless)
+- **Styling:** Tailwind CSS v4
+- **Hosting:** Firebase Hosting
 
-## Code scaffolding
+## 🚀 การติดตั้งและตั้งค่า (Setup & Installation)
 
-Angular CLI includes powerful code scaffolding tools. To generate a new component, run:
+### 1. สิ่งที่ต้องมี (Prerequisites)
 
-```bash
-ng generate component component-name
-```
+- [Node.js](https://nodejs.org/) (เวอร์ชัน 18 หรือสูงกว่า)
+- [Angular CLI](https://angular.io/cli)
+- [Firebase CLI](https://firebase.google.com/docs/cli)
 
-For a complete list of available schematics (such as `components`, `directives`, or `pipes`), run:
-
-```bash
-ng generate --help
-```
-
-## Building
-
-To build the project run:
+### 2. การติดตั้ง (Installation)
 
 ```bash
-ng build
+# 1. Clone a repository
+git clone <your-repository-url>
+
+# 2. เข้าไปที่โฟลเดอร์โปรเจกต์
+cd member-system-app
+
+# 3. ติดตั้ง Dependencies
+npm install
 ```
 
-This will compile your project and store the build artifacts in the `dist/` directory. By default, the production build optimizes your application for performance and speed.
+### 3. การตั้งค่า Firebase Hosting (Multisite)
 
-## Running unit tests
+โปรเจกต์นี้เป็นส่วนหนึ่งของการตั้งค่า Firebase Hosting แบบหลายไซต์ (Multisite) ซึ่งจำเป็นต้องมีไฟล์คอนฟิก 2 ไฟล์นี้
 
-To execute unit tests with the [Karma](https://karma-runner.github.io) test runner, use the following command:
+**ไฟล์ที่ 1: `.firebaserc`**
+ไฟล์นี้ทำหน้าที่ "แมป" ชื่อเล่นของโปรเจกต์กับ Site จริงบน Firebase ไฟล์นี้จะต้องมีข้อมูลของทุกไซต์ในโปรเจกต์ (และควรจะเหมือนกับไฟล์ในโปรเจกต์ `print-receipt`)
+
+```.firebaserc
+{
+  "projects": {
+    "default": "print-receipt"
+  },
+  "targets": {
+    "print-receipt": {
+      "hosting": {
+        "print-receipt": [
+          "print-receipt-6fdc9"
+        ],
+        "member-system": [
+          "member-system-app"
+        ]
+      }
+    }
+  }
+}
+```
+
+**ไฟล์ที่ 2: `firebase.json`**
+ไฟล์นี้เป็น "พิมพ์เขียว" สำหรับ deploy โปรเจกต์นี้โดยเฉพาะ
+
+```json
+{
+  "hosting": {
+    "target": "member-system",
+    "public": "dist/member-system-app/browser",
+    "ignore": [
+      "firebase.json",
+      "**/.*",
+      "**/node_modules/**"
+    ],
+    "rewrites": [
+      {
+        "source": "**",
+        "destination": "/index.html"
+      }
+    ]
+  }
+}
+```
+> **สำคัญ:** ตรวจสอบให้แน่ใจว่าค่า `"public"` ตรงกับ path ของโฟลเดอร์ build ของคุณ (สำหรับ Angular v17+ มักจะเป็น `dist/ชื่อโปรเจกต์/browser`)
+
+### 4. การ Deploy ขึ้น Firebase Hosting
+
+เมื่อตั้งค่าและ build โปรเจกต์เรียบร้อยแล้ว ใช้คำสั่งนี้เพื่อ deploy:
 
 ```bash
-ng test
+# Build โปรเจกต์ให้เป็นเวอร์ชัน production
+ng build --configuration production or ng build -c prod
+
+# Deploy ไปยัง Firebase Hosting โดยระบุ target
+firebase deploy --only hosting:member-system
 ```
-
-## Running end-to-end tests
-
-For end-to-end (e2e) testing, run:
-
-```bash
-ng e2e
-```
-
-Angular CLI does not come with an end-to-end testing framework by default. You can choose one that suits your needs.
-
-## Additional Resources
-
-For more information on using the Angular CLI, including detailed command references, visit the [Angular CLI Overview and Command Reference](https://angular.dev/tools/cli) page.
