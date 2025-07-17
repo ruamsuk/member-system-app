@@ -33,8 +33,12 @@ import { CustomDatepicker } from './custom-datepicker';
         <h1 class="text-3xl md:text-4xl font-thasadith font-bold text-gray-800 dark:text-gray-200">
           รายชื่อสมาชิกชมรม</h1>
         @if (authService.currentUser()?.role === 'admin') {
-          <button (click)="openAddModal()" class="btn-primary">
-            + เพิ่มสมาชิกใหม่
+          <button (click)="openAddModal()" class="btn-primary flex items-center gap-2">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-5 h-5">
+              <path d="M10.75 4.75a.75.75 0 0 0-1.5 0v4.5h-4.5a.75.75 0 0 0 0 1.5h4.5v4.5a.75.75 0 0 0 1.5 0v-4.5h4.5a.75.75 0 0 0 0-1.5h-4.5v-4.5Z" />
+            </svg>
+            <!-- ข้อความนี้จะแสดงเฉพาะจอใหญ่ (sm ขึ้นไป) -->
+            <span class="hidden sm:block">เพิ่มสมาชิกใหม่</span>
           </button>
         }
       </div>
@@ -48,7 +52,7 @@ import { CustomDatepicker } from './custom-datepicker';
             <div class="relative">
               <input type="text"
                      id="search"
-                     placeholder="ค้นหาจากชื่อ, นามสกุล, สถานะ..."
+                     placeholder="หาชื่อ, นามสกุล, จังหวัด, สถานะ..."
                      class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 pr-10 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                      [(ngModel)]="searchTerm">
               @if (searchTerm()) {
@@ -354,7 +358,10 @@ export class MemberListComponent implements OnInit {
 	isModalOpen = signal(false);
 	selectedMember = signal<Member | null>(null);
 	modalMode = signal<'view' | 'form'>('form');
-	memberForm!: FormGroup;
+  provinceFilterId = signal<number | null>(null); // <-- เพิ่ม Signal สำหรับกรองจังหวัด
+
+  memberForm!: FormGroup;
+
 	selectedFile = signal<File | null>(null);
 	imagePreviewUrl = signal<string | null>(null);
 	isEditing = computed(() => !!this.selectedMember() && this.modalMode() === 'form');
@@ -366,15 +373,28 @@ export class MemberListComponent implements OnInit {
 	filteredAndSortedMembers = computed(() => {
 		const term = this.searchTerm().toLowerCase();
 		const direction = this.sortDirection();
+    const provinceId = this.provinceFilterId();
 		let membersToShow = [...(this.members() ?? [])];
 
-		if (term) {
-			membersToShow = membersToShow.filter(m =>
-					(m.firstname || '').toLowerCase().includes(term) ||
-					(m.lastname || '').toLowerCase().includes(term) ||
-					(m.alive || '').toLowerCase().includes(term)
-			);
-		}
+    // ++ เพิ่ม Logic การกรองตามจังหวัด ++
+    if (provinceId) {
+      membersToShow = membersToShow.filter(m => m.address?.addressObject?.provinceId === provinceId);
+    }
+
+    if (term) {
+      const provinces = this.allProvinces(); // <-- ดึงข้อมูลจังหวัดมาใช้
+      membersToShow = membersToShow.filter(m => {
+        // หาชื่อจังหวัดของสมาชิกคนนั้นๆ
+        const provinceName = provinces.find(p => p.id === m.address?.addressObject?.provinceId)?.name_th || '';
+
+        // ค้นหาในชื่อ, นามสกุล, สถานะ, และชื่อจังหวัด
+        return (m.firstname || '').toLowerCase().includes(term) ||
+          (m.lastname || '').toLowerCase().includes(term) ||
+          (m.alive || '').toLowerCase().includes(term) ||
+          provinceName.toLowerCase().includes(term);
+      });
+    }
+    // Sort members based on the selected direction
 		if (direction === 'asc') {
 			membersToShow.sort((a, b) => (a.firstname || '').localeCompare(b.firstname || ''));
 		} else if (direction === 'desc') {
