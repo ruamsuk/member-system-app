@@ -1,5 +1,15 @@
 import { CommonModule } from '@angular/common';
-import { ChangeDetectorRef, Component, computed, DestroyRef, effect, inject, OnInit, signal } from '@angular/core';
+import {
+  ChangeDetectorRef,
+  Component,
+  computed,
+  DestroyRef,
+  effect,
+  HostListener,
+  inject,
+  OnInit,
+  signal
+} from '@angular/core';
 import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Member } from '../models/member.model';
@@ -16,17 +26,17 @@ import { CustomAddress } from './custom-address';
 import { CustomDatepicker } from './custom-datepicker';
 
 @Component({
-	selector: 'app-member-list',
-	standalone: true,
-	imports: [
-		CommonModule,
-		ReactiveFormsModule,
-		FormsModule,
-		ThaiDatePipe,
-		CustomAddress,
-		CustomDatepicker
-	],
-	template: `
+  selector: 'app-member-list',
+  standalone: true,
+  imports: [
+    CommonModule,
+    ReactiveFormsModule,
+    FormsModule,
+    ThaiDatePipe,
+    CustomAddress,
+    CustomDatepicker
+  ],
+  template: `
     <main class="container mx-auto p-4 md:p-8">
       <!-- Header -->
       <div class="flex justify-between items-center mb-6">
@@ -330,51 +340,51 @@ import { CustomDatepicker } from './custom-datepicker';
       </div>
     }
   `,
-	styles: ``,
+  styles: ``,
 })
 export class MemberListComponent implements OnInit {
-	private fb = inject(FormBuilder);
-	private membersService = inject(MembersService);
-	authService = inject(AuthService);
-	loadingService = inject(LoadingService);
-	countAgeService = inject(CountAgeService);
-	private destroyRef = inject(DestroyRef);
-	private dialogService = inject(DialogService);
-	private addressService = inject(AddressService);
-	private cdr = inject(ChangeDetectorRef);
-	private toastService = inject(ToastService);
+  private fb = inject(FormBuilder);
+  private membersService = inject(MembersService);
+  authService = inject(AuthService);
+  loadingService = inject(LoadingService);
+  countAgeService = inject(CountAgeService);
+  private destroyRef = inject(DestroyRef);
+  private dialogService = inject(DialogService);
+  private addressService = inject(AddressService);
+  private cdr = inject(ChangeDetectorRef);
+  private toastService = inject(ToastService);
 
-	// --- Data Signals ---
-	allProvinces = signal<Province[]>([]);
-	allDistricts = signal<District[]>([]);
-	allSubdistricts = signal<Subdistrict[]>([]);
+  // --- Data Signals ---
+  allProvinces = signal<Province[]>([]);
+  allDistricts = signal<District[]>([]);
+  allSubdistricts = signal<Subdistrict[]>([]);
 
-	// --- State Signals ---
-	members = toSignal(this.membersService.getMembers(), {initialValue: undefined});
-	searchTerm = signal('');
-	sortDirection = signal<'asc' | 'desc' | 'none'>('none');
-	currentPage = signal(1);
-	itemsPerPage = signal(9);
-	isModalOpen = signal(false);
-	selectedMember = signal<Member | null>(null);
-	modalMode = signal<'view' | 'form'>('form');
+  // --- State Signals ---
+  members = toSignal(this.membersService.getMembers(), {initialValue: undefined});
+  searchTerm = signal('');
+  sortDirection = signal<'asc' | 'desc' | 'none'>('none');
+  currentPage = signal(1);
+  itemsPerPage = signal(9);
+  isModalOpen = signal(false);
+  selectedMember = signal<Member | null>(null);
+  modalMode = signal<'view' | 'form'>('form');
   provinceFilterId = signal<number | null>(null); // <-- เพิ่ม Signal สำหรับกรองจังหวัด
 
   memberForm!: FormGroup;
 
-	selectedFile = signal<File | null>(null);
-	imagePreviewUrl = signal<string | null>(null);
-	isEditing = computed(() => !!this.selectedMember() && this.modalMode() === 'form');
+  selectedFile = signal<File | null>(null);
+  imagePreviewUrl = signal<string | null>(null);
+  isEditing = computed(() => !!this.selectedMember() && this.modalMode() === 'form');
 
-	// --- Options ---
-	readonly rankOptions = ['น.อ.ร.', 'ร.ต.ท.', 'ร.ต.อ.', 'พ.ต.ต.', 'พ.ต.ท.', 'พ.ต.อ.', 'พล.ต.อ.'];
+  // --- Options ---
+  readonly rankOptions = ['น.อ.ร.', 'ร.ต.ท.', 'ร.ต.อ.', 'พ.ต.ต.', 'พ.ต.ท.', 'พ.ต.อ.', 'พล.ต.อ.'];
 
-	// --- Computed Signals for Display ---
-	filteredAndSortedMembers = computed(() => {
-		const term = this.searchTerm().toLowerCase();
-		const direction = this.sortDirection();
+  // --- Computed Signals for Display ---
+  filteredAndSortedMembers = computed(() => {
+    const term = this.searchTerm().toLowerCase();
+    const direction = this.sortDirection();
     const provinceId = this.provinceFilterId();
-		let membersToShow = [...(this.members() ?? [])];
+    let membersToShow = [...(this.members() ?? [])];
 
     // ++ เพิ่ม Logic การกรองตามจังหวัด ++
     if (provinceId) {
@@ -395,161 +405,168 @@ export class MemberListComponent implements OnInit {
       });
     }
     // Sort members based on the selected direction
-		if (direction === 'asc') {
-			membersToShow.sort((a, b) => (a.firstname || '').localeCompare(b.firstname || ''));
-		} else if (direction === 'desc') {
-			membersToShow.sort((a, b) => (b.firstname || '').localeCompare(a.firstname || ''));
-		}
+    if (direction === 'asc') {
+      membersToShow.sort((a, b) => (a.firstname || '').localeCompare(b.firstname || ''));
+    } else if (direction === 'desc') {
+      membersToShow.sort((a, b) => (b.firstname || '').localeCompare(a.firstname || ''));
+    }
 
-		return membersToShow;
-	});
+    return membersToShow;
+  });
 
-	paginatedMembers = computed(() => {
-		const list = this.filteredAndSortedMembers();
-		const start = (this.currentPage() - 1) * this.itemsPerPage();
-		return list.slice(start, start + this.itemsPerPage());
-	});
+  paginatedMembers = computed(() => {
+    const list = this.filteredAndSortedMembers();
+    const start = (this.currentPage() - 1) * this.itemsPerPage();
+    return list.slice(start, start + this.itemsPerPage());
+  });
 
-	totalPages = computed(() => Math.ceil(this.filteredAndSortedMembers().length / this.itemsPerPage()));
+  totalPages = computed(() => Math.ceil(this.filteredAndSortedMembers().length / this.itemsPerPage()));
 
-	readonly emptySlots = computed(() => {
-		const count = this.paginatedMembers().length;
-		const remainder = count % 3;
-		return remainder === 0 ? [] : Array(3 - remainder);
-	});
+  readonly emptySlots = computed(() => {
+    const count = this.paginatedMembers().length;
+    const remainder = count % 3;
+    return remainder === 0 ? [] : Array(3 - remainder);
+  });
 
 
-	constructor() {
-		this.loadingService.show();
-		effect(() => {
-			if (this.members() !== undefined) {
-				this.loadingService.hide();
-			}
-		});
+  constructor() {
+    this.loadingService.show();
+    effect(() => {
+      if (this.members() !== undefined) {
+        this.loadingService.hide();
+      }
+    });
 
-		// +++ Effect ใหม่สำหรับรีเซ็ตหน้าเมื่อมีการค้นหา +++
-		effect(() => {
-			// การเรียก searchTerm() ที่นี่ จะทำให้ effect นี้ทำงานทุกครั้งที่ค่าเปลี่ยน
-			this.searchTerm();
-			// เมื่อมีการค้นหา, ให้กลับไปที่หน้าแรกเสมอ
-			this.currentPage.set(1);
-		});
+    // +++ Effect ใหม่สำหรับรีเซ็ตหน้าเมื่อมีการค้นหา +++
+    effect(() => {
+      // การเรียก searchTerm() ที่นี่ จะทำให้ effect นี้ทำงานทุกครั้งที่ค่าเปลี่ยน
+      this.searchTerm();
+      // เมื่อมีการค้นหา, ให้กลับไปที่หน้าแรกเสมอ
+      this.currentPage.set(1);
+    });
 
-	}
+  }
 
-	ngOnInit(): void {
-		this.initializeForm();
-		this.addressService.getProvinces()
-				.subscribe(data => {
-					this.allProvinces.set(data);
-					this.cdr.detectChanges();
-				});
-		this.addressService.getDistricts()
-				.subscribe(data => {
-					this.allDistricts.set(data);
-					this.cdr.detectChanges();
-				});
-		this.addressService.getSubdistricts().subscribe(data => this.allSubdistricts.set(data));
-	}
+  ngOnInit(): void {
+    this.initializeForm();
+    this.addressService.getProvinces()
+      .subscribe(data => {
+        this.allProvinces.set(data);
+        this.cdr.detectChanges();
+      });
+    this.addressService.getDistricts()
+      .subscribe(data => {
+        this.allDistricts.set(data);
+        this.cdr.detectChanges();
+      });
+    this.addressService.getSubdistricts().subscribe(data => this.allSubdistricts.set(data));
+  }
 
-	initializeForm(member: Member | null = null): void {
-		const addressObj = member?.address?.addressObject
-				? {
-					provinceId: member.address.addressObject.provinceId,
-					districtId: member.address.addressObject.districtId,
-					subdistrictId: member.address.addressObject.subdistrictId,
-					zipCode: member.address.addressObject.zipCode
-				}
-				: null;
+  @HostListener('window:resize')
+  onResize() {
+    if (window.innerWidth < 768) {
+      this.itemsPerPage.set(6); // ลดจำนวนสมาชิกที่แสดงในแต่ละหน้าเมื่อหน้าจอเล็ก
+    }
+  }
 
-		if (member?.birthdate && 'seconds' in member.birthdate) {
-			member.birthdate = new Date(member.birthdate.seconds * 1000);
-		}
+  initializeForm(member: Member | null = null): void {
+    const addressObj = member?.address?.addressObject
+      ? {
+        provinceId: member.address.addressObject.provinceId,
+        districtId: member.address.addressObject.districtId,
+        subdistrictId: member.address.addressObject.subdistrictId,
+        zipCode: member.address.addressObject.zipCode
+      }
+      : null;
 
-		this.memberForm = this.fb.group({
-			rank: [member?.rank || ''],
-			firstname: [member?.firstname || '', Validators.required],
-			lastname: [member?.lastname || '', Validators.required],
-			phone: [member?.phone || ''],
-			birthdate: [member?.birthdate || null],
-			alive: [member?.alive || 'ยังมีชีวิตอยู่', Validators.required],
-			addressLine1: [member?.address?.line1 || ''],
-			addressObject: [addressObj, Validators.required],
-			photoURL: [member?.photoURL || '']
-		});
+    if (member?.birthdate && 'seconds' in member.birthdate) {
+      member.birthdate = new Date(member.birthdate.seconds * 1000);
+    }
 
-		const aliveControl = this.memberForm.get('alive');
-		aliveControl?.valueChanges
-				.pipe(takeUntilDestroyed(this.destroyRef))
-				.subscribe(status => {
-					const addressCtrl = this.memberForm.get('addressObject');
-					if (status === 'เสียชีวิตแล้ว') {
-						addressCtrl?.clearValidators();
-					} else {
-						addressCtrl?.setValidators(Validators.required);
-					}
-					addressCtrl?.updateValueAndValidity();
-				});
-	}
+    this.memberForm = this.fb.group({
+      rank: [member?.rank || ''],
+      firstname: [member?.firstname || '', Validators.required],
+      lastname: [member?.lastname || '', Validators.required],
+      phone: [member?.phone || ''],
+      birthdate: [member?.birthdate || null],
+      alive: [member?.alive || 'ยังมีชีวิตอยู่', Validators.required],
+      addressLine1: [member?.address?.line1 || ''],
+      addressObject: [addressObj, Validators.required],
+      photoURL: [member?.photoURL || '']
+    });
 
-	// --- UI Action Methods ---
-	openDetailModal(member: Member): void {
-		this.selectedMember.set(member);
-		this.modalMode.set('view');
-		this.isModalOpen.set(true);
-	}
+    const aliveControl = this.memberForm.get('alive');
+    aliveControl?.valueChanges
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(status => {
+        const addressCtrl = this.memberForm.get('addressObject');
+        if (status === 'เสียชีวิตแล้ว') {
+          addressCtrl?.clearValidators();
+        } else {
+          addressCtrl?.setValidators(Validators.required);
+        }
+        addressCtrl?.updateValueAndValidity();
+      });
+  }
 
-	switchToEditMode(): void {
-		// console.log('switchToEditMode', JSON.stringify(this.selectedMember(), null, 2));
-		if (this.selectedMember()) {
-			this.initializeForm(this.selectedMember());
-			this.imagePreviewUrl.set(this.selectedMember()!.photoURL || null);
-			this.modalMode.set('form');
-		}
-	}
+  // --- UI Action Methods ---
+  openDetailModal(member: Member): void {
+    this.selectedMember.set(member);
+    this.modalMode.set('view');
+    this.isModalOpen.set(true);
+  }
 
-	openAddModal(): void {
-		this.selectedMember.set(null);
-		this.initializeForm();
-		this.selectedFile.set(null);
-		this.imagePreviewUrl.set(null);
-		this.modalMode.set('form');
-		this.isModalOpen.set(true);
-	}
+  switchToEditMode(): void {
+    // console.log('switchToEditMode', JSON.stringify(this.selectedMember(), null, 2));
+    if (this.selectedMember()) {
+      this.initializeForm(this.selectedMember());
+      this.imagePreviewUrl.set(this.selectedMember()!.photoURL || null);
+      this.modalMode.set('form');
+    }
+  }
 
-	async onDelete(member: Member): Promise<void> {
-		const confirmed = await this.dialogService.open({
-			title: 'ยืนยันการลบข้อมูล',
-			message: `คุณแน่ใจหรือไม่ว่าต้องการลบข้อมูลของ <strong>${member.rank || ''} ${member.firstname} ${member.lastname}</strong>?`
-		});
-		if (confirmed && member.id) {
-			this.loadingService.show();
-			try {
-				await this.membersService.deleteMember(member.id);
-			} catch (err) {
-				console.error('Error deleting member:', err);
-			} finally {
-				this.loadingService.hide();
-			}
-		}
-	}
+  openAddModal(): void {
+    this.selectedMember.set(null);
+    this.initializeForm();
+    this.selectedFile.set(null);
+    this.imagePreviewUrl.set(null);
+    this.modalMode.set('form');
+    this.isModalOpen.set(true);
+  }
 
-	openEditModal(member: Member): void {
-		this.selectedMember.set(member);
-		this.initializeForm(member);
+  async onDelete(member: Member): Promise<void> {
+    const confirmed = await this.dialogService.open({
+      title: 'ยืนยันการลบข้อมูล',
+      message: `คุณแน่ใจหรือไม่ว่าต้องการลบข้อมูลของ <strong>${member.rank || ''} ${member.firstname} ${member.lastname}</strong>?`
+    });
+    if (confirmed && member.id) {
+      this.loadingService.show();
+      try {
+        await this.membersService.deleteMember(member.id);
+      } catch (err) {
+        console.error('Error deleting member:', err);
+      } finally {
+        this.loadingService.hide();
+      }
+    }
+  }
+
+  openEditModal(member: Member): void {
+    this.selectedMember.set(member);
+    this.initializeForm(member);
     this.selectedFile.set(null);
     this.imagePreviewUrl.set(member.photoURL || null);
-		this.modalMode.set('form');
-		this.isModalOpen.set(true);
-	}
+    this.modalMode.set('form');
+    this.isModalOpen.set(true);
+  }
 
-	// --- Form Submission ---
-	async onSubmit(): Promise<void> {
-		if (this.memberForm.invalid) {
-			this.memberForm.markAllAsTouched();
-			return;
-		}
-		this.loadingService.show();
+  // --- Form Submission ---
+  async onSubmit(): Promise<void> {
+    if (this.memberForm.invalid) {
+      this.memberForm.markAllAsTouched();
+      return;
+    }
+    this.loadingService.show();
 
     const { firstname, lastname } = this.memberForm.value;
     const adminId = this.authService.currentUser()?.uid || '';
@@ -562,103 +579,103 @@ export class MemberListComponent implements OnInit {
     }
     const {addressLine1, addressObject, ...restOfForm} = this.memberForm.value;
 
-		let dataToSave: any = {
-			...restOfForm,
-			address: {
-				line1: addressLine1,
-				addressObject: addressObject
-			},
-			photoURL: this.selectedMember()?.photoURL || ''
-		};
+    let dataToSave: any = {
+      ...restOfForm,
+      address: {
+        line1: addressLine1,
+        addressObject: addressObject
+      },
+      photoURL: this.selectedMember()?.photoURL || ''
+    };
 
-		try {
-			const fileToUpload = this.selectedFile();
-			if (fileToUpload) {
-				const memberId = this.selectedMember()?.id || '';
-				dataToSave.photoURL = await this.membersService.uploadMemberImage(fileToUpload, memberId);
-			}
+    try {
+      const fileToUpload = this.selectedFile();
+      if (fileToUpload) {
+        const memberId = this.selectedMember()?.id || '';
+        dataToSave.photoURL = await this.membersService.uploadMemberImage(fileToUpload, memberId);
+      }
 
-			if (this.isEditing() && this.selectedMember()) {
-				const updatedMember = {...this.selectedMember()!, ...dataToSave};
-				await this.membersService.updateMember(updatedMember);
-			} else {
-				await this.membersService.addMember(dataToSave);
-			}
-			this.toastService.show('Success', 'บันทึกข้อมูลสมาชิกสำเร็จ', 'success');
-			this.closeModal();
-		} catch (error) {
-			this.toastService.show('Error', 'เกิดข้อผิดพลาดในการบันทึกข้อมูลสมาชิก', 'error');
-			console.error('Error saving member:', error);
-		} finally {
-			this.loadingService.hide();
-		}
-	}
+      if (this.isEditing() && this.selectedMember()) {
+        const updatedMember = {...this.selectedMember()!, ...dataToSave};
+        await this.membersService.updateMember(updatedMember);
+      } else {
+        await this.membersService.addMember(dataToSave);
+      }
+      this.toastService.show('Success', 'บันทึกข้อมูลสมาชิกสำเร็จ', 'success');
+      this.closeModal();
+    } catch (error) {
+      this.toastService.show('Error', 'เกิดข้อผิดพลาดในการบันทึกข้อมูลสมาชิก', 'error');
+      console.error('Error saving member:', error);
+    } finally {
+      this.loadingService.hide();
+    }
+  }
 
-	closeModal() {
-		this.isModalOpen.set(false);
-		this.selectedMember.set(null);
-		this.selectedFile.set(null);
-	}
+  closeModal() {
+    this.isModalOpen.set(false);
+    this.selectedMember.set(null);
+    this.selectedFile.set(null);
+  }
 
-	onMemberImageSelected(event: Event): void {
-		const file = (event.target as HTMLInputElement).files?.[0];
-		if (file) {
-			this.selectedFile.set(file);
-			this.imagePreviewUrl.set(URL.createObjectURL(file));
-		}
-	}
+  onMemberImageSelected(event: Event): void {
+    const file = (event.target as HTMLInputElement).files?.[0];
+    if (file) {
+      this.selectedFile.set(file);
+      this.imagePreviewUrl.set(URL.createObjectURL(file));
+    }
+  }
 
-	// --- Helper & Utility Methods ---
-	clearSearch(): void {
-		this.searchTerm.set('');
-	}
+  // --- Helper & Utility Methods ---
+  clearSearch(): void {
+    this.searchTerm.set('');
+  }
 
-	setSort(direction: 'asc' | 'desc'): void {
-		this.sortDirection.set(direction);
-	}
+  setSort(direction: 'asc' | 'desc'): void {
+    this.sortDirection.set(direction);
+  }
 
-	goToPage(page: number): void {
-		if (page >= 1 && page <= this.totalPages()) this.currentPage.set(page);
-	}
+  goToPage(page: number): void {
+    if (page >= 1 && page <= this.totalPages()) this.currentPage.set(page);
+  }
 
-	nextPage(): void {
-		this.goToPage(this.currentPage() + 1);
-	}
+  nextPage(): void {
+    this.goToPage(this.currentPage() + 1);
+  }
 
-	previousPage(): void {
-		this.goToPage(this.currentPage() - 1);
-	}
+  previousPage(): void {
+    this.goToPage(this.currentPage() - 1);
+  }
 
-	// ++ เพิ่มเมธอดใหม่สำหรับ Paginator ++
-	firstPage(): void {
-		this.goToPage(1);
-	}
+  // ++ เพิ่มเมธอดใหม่สำหรับ Paginator ++
+  firstPage(): void {
+    this.goToPage(1);
+  }
 
-	lastPage(): void {
-		this.goToPage(this.totalPages());
-	}
+  lastPage(): void {
+    this.goToPage(this.totalPages());
+  }
 
-	getFullAddress(address: Member['address']): string {
-		if (!address || !address.addressObject || this.allProvinces().length === 0) {
-			return address?.line1 || 'ไม่มีข้อมูลที่อยู่';
-		}
-		const {line1, addressObject} = address;
-		const province = this.allProvinces().find(p => p.id === addressObject.provinceId)?.name_th || '';
-		const district = this.allDistricts().find(d => d.id === addressObject.districtId)?.name_th || '';
-		const subdistrict = this.allSubdistricts().find(s => s.id === addressObject.subdistrictId)?.name_th || '';
+  getFullAddress(address: Member['address']): string {
+    if (!address || !address.addressObject || this.allProvinces().length === 0) {
+      return address?.line1 || 'ไม่มีข้อมูลที่อยู่';
+    }
+    const {line1, addressObject} = address;
+    const province = this.allProvinces().find(p => p.id === addressObject.provinceId)?.name_th || '';
+    const district = this.allDistricts().find(d => d.id === addressObject.districtId)?.name_th || '';
+    const subdistrict = this.allSubdistricts().find(s => s.id === addressObject.subdistrictId)?.name_th || '';
 
     if (province != 'กรุงเทพมหานคร') {
       return `${line1 || ''} ต.${subdistrict} อ.${district} จ.${province} ${addressObject.zipCode || ''}`.trim();
     } else {
       return `${line1 || ''} แขวง${subdistrict} ${district} ${province} ${addressObject.zipCode || ''}`.trim();
     }
-	}
+  }
 
-	// // ++ เพิ่มเมธอดใหม่สำหรับ Tracking ++
-	// trackByMember(index: number, member: Member): string | number {
-	// 	if (typeof member.id === 'string' && member.id.trim() !== '') {
-	// 		return member.id;
-	// 	}
-	// 	return `temp_${index}`; // ใช้ id ถ้ามี ถ้าไม่มีก็ใช้ index
-	// }
+  // // ++ เพิ่มเมธอดใหม่สำหรับ Tracking ++
+  // trackByMember(index: number, member: Member): string | number {
+  // 	if (typeof member.id === 'string' && member.id.trim() !== '') {
+  // 		return member.id;
+  // 	}
+  // 	return `temp_${index}`; // ใช้ id ถ้ามี ถ้าไม่มีก็ใช้ index
+  // }
 }
