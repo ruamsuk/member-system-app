@@ -18,7 +18,7 @@ import { ToastService } from '../services/toast.service';
         <h1 class="text-3xl md:text-4xl font-bold font-leera text-gray-800 dark:text-gray-200 mb-6">User Role Management</h1>
         <button (click)="router.navigate(['/'])"
                 class="bg-sky-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-sky-800 transition duration-300 ml-2">
-          Go Back to Home
+          Back
         </button>
       </div>
 

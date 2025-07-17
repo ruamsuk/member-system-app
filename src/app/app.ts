@@ -40,13 +40,18 @@ import { Loading } from './shared/loading';
               }
             </button>
 
-            @if(authService.currentUser()) {
-              <a routerLink="/profile" class="flex items-center gap-2 text-sm text-gray-600 hover:text-blue-600 dark:text-gray-300 dark:hover:text-blue-400" title="Go to profile">
+            @if (authService.currentUser()) {
+              <a routerLink="/profile"
+                 class="flex items-center gap-2 text-sm text-gray-600 hover:text-blue-600 dark:text-gray-300 dark:hover:text-blue-400"
+                 title="Go to profile">
                 <span>Welcome, {{ authService.currentUser()?.displayName || authService.currentUser()?.email }}</span>
                 <img class="h-8 w-8 rounded-full object-cover"
                      [src]="authService.currentUser()?.photoURL || 'https://i.pravatar.cc/150?u=default'"
                      alt="My Profile Picture">
               </a>
+              @if (authService.currentUser()?.role === 'admin') {
+                <a routerLink="/user-management" class="text-gray-800 dark:text-gray-300">Manage Users</a>
+              }
               <button (click)="logout()" class="btn-secondary-sm">Logout</button>
             }
           </div>
@@ -54,18 +59,23 @@ import { Loading } from './shared/loading';
           <!-- Hamburger Menu Button (แสดงเฉพาะจอมือถือ) -->
           <div class="md:hidden">
             <button (click)="toggleMobileMenu()" class="btn-icon-round">
-              <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
+              <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                      d="M4 6h16M4 12h16M4 18h16"></path>
+              </svg>
             </button>
           </div>
         </div>
 
         <!-- Mobile Menu (Dropdown) -->
-        @if(isMobileMenuOpen()) {
+        @if (isMobileMenuOpen()) {
           <div class="md:hidden mt-4">
             <div class="flex flex-col gap-2">
-              @if(authService.currentUser()) {
+              @if (authService.currentUser()) {
                 <a routerLink="/profile" (click)="closeMobileMenu()" class="mobile-menu-item">Profile</a>
+                @if (authService.currentUser()?.role === 'admin') {
                 <a routerLink="/user-management" (click)="closeMobileMenu()" class="mobile-menu-item">Manage Users</a>
+                }
                 <a (click)="logout()" class="mobile-menu-item text-red-500">Logout</a>
               }
               <div class="border-t dark:border-gray-700 pt-2 mt-2">
