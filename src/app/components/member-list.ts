@@ -496,17 +496,36 @@ export class MemberListComponent implements OnInit {
     });
 
     const aliveControl = this.memberForm.get('alive');
-    aliveControl?.valueChanges
-      .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe(status => {
-        const addressCtrl = this.memberForm.get('addressObject');
+    const birthdateControl = this.memberForm.get('birthdate');
+    const addressObjectControl = this.memberForm.get('addressObject');
+
+    // Set validators based on alive status
+    if (aliveControl && birthdateControl && addressObjectControl) {
+      aliveControl.valueChanges.pipe(
+        takeUntilDestroyed(this.destroyRef)
+      ).subscribe(status => {
         if (status === 'เสียชีวิตแล้ว') {
-          addressCtrl?.clearValidators();
+          birthdateControl.clearValidators();
+          addressObjectControl.clearValidators();
         } else {
-          addressCtrl?.setValidators(Validators.required);
+          birthdateControl.setValidators(Validators.required);
+          addressObjectControl.setValidators(Validators.required);
         }
-        addressCtrl?.updateValueAndValidity();
+        birthdateControl.updateValueAndValidity();
+        addressObjectControl.updateValueAndValidity();
       });
+    }
+    // aliveControl?.valueChanges
+    //   .pipe(takeUntilDestroyed(this.destroyRef))
+    //   .subscribe(status => {
+    //     const addressCtrl = this.memberForm.get('addressObject');
+    //     if (status === 'เสียชีวิตแล้ว') {
+    //       addressCtrl?.clearValidators();
+    //     } else {
+    //       addressCtrl?.setValidators(Validators.required);
+    //     }
+    //     addressCtrl?.updateValueAndValidity();
+    //   });
   }
 
   // --- UI Action Methods ---
@@ -543,8 +562,10 @@ export class MemberListComponent implements OnInit {
       this.loadingService.show();
       try {
         await this.membersService.deleteMember(member.id);
-      } catch (err) {
+        this.toastService.show('Success', 'ลบข้อมูลสมาชิกสำเร็จ', 'success');
+      } catch (err: any) {
         console.error('Error deleting member:', err);
+        this.toastService.show('Error', 'เกิดข้อผิดพลาดในการลบข้อมูลสมาชิก: ' + err.message, 'error');
       } finally {
         this.loadingService.hide();
       }
